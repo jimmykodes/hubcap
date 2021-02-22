@@ -1,6 +1,7 @@
 package dao
 
 import (
+	"github.com/jimmykodes/vehicle_maintenance/internal/settings"
 	"github.com/jmoiron/sqlx"
 	"go.uber.org/multierr"
 )
@@ -12,8 +13,11 @@ type DAO struct {
 	Vehicle     Vehicle
 }
 
-func NewDAO() (*DAO, error) {
-	db := &sqlx.DB{}
+func NewDAO(dbSettings settings.DB) (*DAO, error) {
+	db, err := sqlx.Open(dbSettings.DriveName, dbSettings.DNS())
+	if err != nil {
+		return nil, err
+	}
 	vehicle, err := newVehicle(db)
 	if err != nil {
 		return nil, err

@@ -1,0 +1,9 @@
+FROM golang:1.15 as builder
+WORKDIR /app
+COPY . .
+ENV GOBIN=/
+RUN go install -mod=mod ./cmd/...
+
+FROM debian:buster
+COPY --from=builder /server /app
+CMD ["./app"]
