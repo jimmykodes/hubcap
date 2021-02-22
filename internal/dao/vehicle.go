@@ -1,16 +1,18 @@
 package dao
 
 import (
+	"context"
+
 	"github.com/jimmykodes/vehicle_maintenance/internal/dto"
 	"github.com/jmoiron/sqlx"
 )
 
 type Vehicle interface {
-	Create(v *dto.Vehicle) error
-	Get(id int64) (*dto.Vehicle, error)
-	Select(sf SearchFilters) ([]*dto.Vehicle, error)
-	Update(v *dto.Vehicle) error
-	Delete(id int64) error
+	Create(ctx context.Context, v *dto.Vehicle) error
+	Get(ctx context.Context, id int64) (*dto.Vehicle, error)
+	Select(ctx context.Context, sf SearchFilters) ([]*dto.Vehicle, error)
+	Update(ctx context.Context, v *dto.Vehicle) error
+	Delete(ctx context.Context, id int64) error
 	Close() error
 }
 
@@ -23,23 +25,23 @@ func newVehicle(db *sqlx.DB) (*vehicle, error) {
 	return &vehicle{db: db}, nil
 }
 
-func (v *vehicle) Create(vehicle *dto.Vehicle) error {
+func (v *vehicle) Create(ctx context.Context, vehicle *dto.Vehicle) error {
 	panic("implement me")
 }
 
-func (v *vehicle) Get(id int64) (*dto.Vehicle, error) {
+func (v *vehicle) Get(ctx context.Context, id int64) (*dto.Vehicle, error) {
 	panic("implement me")
 }
 
-func (v *vehicle) Select(sf SearchFilters) ([]*dto.Vehicle, error) {
+func (v *vehicle) Select(ctx context.Context, sf SearchFilters) ([]*dto.Vehicle, error) {
 	panic("implement me")
 }
 
-func (v *vehicle) Update(vehicle *dto.Vehicle) error {
+func (v *vehicle) Update(ctx context.Context, vehicle *dto.Vehicle) error {
 	panic("implement me")
 }
 
-func (v *vehicle) Delete(id int64) error {
+func (v *vehicle) Delete(ctx context.Context, id int64) error {
 	panic("implement me")
 }
 
