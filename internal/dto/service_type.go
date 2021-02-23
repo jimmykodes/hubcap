@@ -5,5 +5,5 @@ type ServiceType struct {
 	Name      string `db:"name"`
 	FreqMiles int64  `db:"freq_miles"`
 	FreqDays  int64  `db:"freq_days"`
-	User      User   `db:"user"`
+	UserID    int64  `db:"user_id"`
 }

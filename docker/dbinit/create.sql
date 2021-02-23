@@ -35,7 +35,7 @@ create table if not exists vehicles
     id      int auto_increment primary key,
     name    varchar(255) not null,
     make    varchar(255) not null,
-    mode    varchar(255) not null,
+    model   varchar(255) not null,
     year    int          not null,
     user_id int          not null
 );

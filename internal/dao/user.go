@@ -3,6 +3,7 @@ package dao
 import (
 	"context"
 
+	"github.com/google/uuid"
 	"github.com/jimmykodes/vehicle_maintenance/internal/dto"
 	"github.com/jmoiron/sqlx"
 )
@@ -43,7 +44,11 @@ func newUser(db *sqlx.DB) (*user, error) {
 }
 
 func (u *user) Create(ctx context.Context, user *dto.User) error {
-	_, err := u.stmts[createUser].ExecContext(ctx, user)
+	apiKey, err := uuid.NewRandom()
+	if err != nil {
+		return err
+	}
+	_, err = u.stmts[createUser].ExecContext(ctx, user.Email, apiKey, user.SuperUser)
 	return err
 }
 
