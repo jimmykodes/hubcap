@@ -6,10 +6,10 @@ import (
 )
 
 type stmt int
-
+type queries map[stmt]string
 type statements map[stmt]*sqlx.Stmt
 
-func prepareStatements(db *sqlx.DB, queries map[stmt]string) (statements, error) {
+func prepareStatements(db *sqlx.DB, queries queries) (statements, error) {
 	stmts := make(statements, 0)
 	for s, query := range queries {
 		preparedStmt, err := db.Preparex(query)
