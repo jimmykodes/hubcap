@@ -1,4 +1,4 @@
-name: ci
+name: Node
 
 on:
   push:
@@ -21,9 +21,6 @@ jobs:
       - name: Checkout 🛎
         uses: actions/checkout@master
 
-      - name: cd web
-        run: cd web
-
       - name: Setup node env 🏗
         uses: actions/setup-node@v2.1.2
         with:
@@ -32,14 +29,16 @@ jobs:
       - name: Cache node_modules 📦
         uses: actions/cache@v2
         with:
-          path: ~/.npm
+          path: ~/web/.npm
           key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-node-
 
       - name: Install dependencies 👨🏻‍💻
+        working-directory: ~/web
         run: npm ci
 
       - name: Run linter 👀
+        working-directory: ~/web
         run: npm run lint
 
