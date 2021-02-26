@@ -18,9 +18,9 @@ type ServiceType struct {
 	serviceTypeDAO dao.ServiceType
 }
 
-func NewServiceType(logger *zap.Logger, serviceDAO dao.Service) *Service {
+func NewServiceType(logger *zap.Logger, serviceTypeDAO dao.ServiceType) *ServiceType {
 	localLogger := logger.With(zap.String("handler", "service type"))
-	return &Service{logger: localLogger, serviceDAO: serviceDAO}
+	return &ServiceType{logger: localLogger, serviceTypeDAO: serviceTypeDAO}
 }
 
 func (h ServiceType) Detail(w http.ResponseWriter, r *http.Request) {
@@ -57,14 +57,14 @@ func (h ServiceType) List(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h ServiceType) create(w http.ResponseWriter, r *http.Request, userID int64) {
-	service := &dto.ServiceType{}
-	if err := json.NewDecoder(r.Body).Decode(service); err != nil {
+	serviceType := new(dto.ServiceType)
+	if err := json.NewDecoder(r.Body).Decode(serviceType); err != nil {
 		h.logger.Error("error decoding json", zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	service.UserID = userID
-	if err := h.serviceTypeDAO.Create(r.Context(), service); err != nil {
+	serviceType.UserID = userID
+	if err := h.serviceTypeDAO.Create(r.Context(), serviceType); err != nil {
 		h.logger.Error("error calling create", zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -75,7 +75,7 @@ func (h ServiceType) list(w http.ResponseWriter, r *http.Request, userID int64) 
 
 }
 func (h ServiceType) get(w http.ResponseWriter, r *http.Request, id, userID int64) {
-	service, err := h.serviceTypeDAO.Get(r.Context(), id, userID)
+	serviceType, err := h.serviceTypeDAO.Get(r.Context(), id, userID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			w.WriteHeader(http.StatusNotFound)
@@ -85,19 +85,19 @@ func (h ServiceType) get(w http.ResponseWriter, r *http.Request, id, userID int6
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	if err := json.NewEncoder(w).Encode(service); err != nil {
+	if err := json.NewEncoder(w).Encode(serviceType); err != nil {
 		h.logger.Error("error writing data", zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 }
 func (h ServiceType) update(w http.ResponseWriter, r *http.Request, id, userID int64) {
-	var service *dto.ServiceType
-	if err := json.NewDecoder(r.Body).Decode(service); err != nil {
+	serviceType := new(dto.ServiceType)
+	if err := json.NewDecoder(r.Body).Decode(serviceType); err != nil {
 		h.logger.Error("error decoding json", zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	if err := h.serviceTypeDAO.Update(r.Context(), service, id, userID); err != nil {
+	if err := h.serviceTypeDAO.Update(r.Context(), serviceType, id, userID); err != nil {
 		h.logger.Error("error calling update", zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return

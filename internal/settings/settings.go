@@ -7,10 +7,6 @@ import (
 	"github.com/go-sql-driver/mysql"
 )
 
-type Settings struct {
-	DB DB
-}
-
 func NewSettings() (*Settings, error) {
 	settings := &Settings{}
 	_, err := env.UnmarshalFromEnviron(settings)
@@ -18,6 +14,12 @@ func NewSettings() (*Settings, error) {
 		return nil, err
 	}
 	return settings, nil
+}
+
+type Settings struct {
+	Debug    bool   `env:"DEBUG"`
+	LogLevel string `env:"LOG_LEVEL"`
+	DB       DB
 }
 
 type DB struct {

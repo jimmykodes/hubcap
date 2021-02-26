@@ -57,7 +57,7 @@ func (h Service) List(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h Service) create(w http.ResponseWriter, r *http.Request, userID int64) {
-	service := &dto.Service{}
+	service := new(dto.Service)
 	if err := json.NewDecoder(r.Body).Decode(service); err != nil {
 		h.logger.Error("error decoding service json", zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
@@ -91,7 +91,7 @@ func (h Service) get(w http.ResponseWriter, r *http.Request, id, userID int64) {
 	}
 }
 func (h Service) update(w http.ResponseWriter, r *http.Request, id, userID int64) {
-	var service *dto.Service
+	service := new(dto.Service)
 	if err := json.NewDecoder(r.Body).Decode(service); err != nil {
 		h.logger.Error("error decoding service json", zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)

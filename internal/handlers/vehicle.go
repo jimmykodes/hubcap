@@ -14,13 +14,13 @@ import (
 )
 
 type Vehicle struct {
-	logger         *zap.Logger
-	serviceTypeDAO dao.Vehicle
+	logger     *zap.Logger
+	vehicleDAO dao.Vehicle
 }
 
-func NewVehicle(logger *zap.Logger, serviceDAO dao.Service) *Service {
+func NewVehicle(logger *zap.Logger, vehicleDAO dao.Vehicle) *Vehicle {
 	localLogger := logger.With(zap.String("handler", "vehicle"))
-	return &Service{logger: localLogger, serviceDAO: serviceDAO}
+	return &Vehicle{logger: localLogger, vehicleDAO: vehicleDAO}
 }
 
 func (h Vehicle) Detail(w http.ResponseWriter, r *http.Request) {
@@ -64,7 +64,7 @@ func (h Vehicle) create(w http.ResponseWriter, r *http.Request, userID int64) {
 		return
 	}
 	service.UserID = userID
-	if err := h.serviceTypeDAO.Create(r.Context(), service); err != nil {
+	if err := h.vehicleDAO.Create(r.Context(), service); err != nil {
 		h.logger.Error("error calling create", zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -75,7 +75,7 @@ func (h Vehicle) list(w http.ResponseWriter, r *http.Request, userID int64) {
 
 }
 func (h Vehicle) get(w http.ResponseWriter, r *http.Request, id, userID int64) {
-	service, err := h.serviceTypeDAO.Get(r.Context(), id, userID)
+	service, err := h.vehicleDAO.Get(r.Context(), id, userID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			w.WriteHeader(http.StatusNotFound)
@@ -91,13 +91,13 @@ func (h Vehicle) get(w http.ResponseWriter, r *http.Request, id, userID int64) {
 	}
 }
 func (h Vehicle) update(w http.ResponseWriter, r *http.Request, id, userID int64) {
-	var service *dto.Vehicle
-	if err := json.NewDecoder(r.Body).Decode(service); err != nil {
+	vehicle := &dto.Vehicle{}
+	if err := json.NewDecoder(r.Body).Decode(vehicle); err != nil {
 		h.logger.Error("error decoding json", zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	if err := h.serviceTypeDAO.Update(r.Context(), service, id, userID); err != nil {
+	if err := h.vehicleDAO.Update(r.Context(), vehicle, id, userID); err != nil {
 		h.logger.Error("error calling update", zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -105,7 +105,7 @@ func (h Vehicle) update(w http.ResponseWriter, r *http.Request, id, userID int64
 	w.WriteHeader(http.StatusNoContent)
 }
 func (h Vehicle) delete(w http.ResponseWriter, r *http.Request, id, userID int64) {
-	if err := h.serviceTypeDAO.Delete(r.Context(), id, userID); err != nil {
+	if err := h.vehicleDAO.Delete(r.Context(), id, userID); err != nil {
 		h.logger.Error("error calling delete", zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
