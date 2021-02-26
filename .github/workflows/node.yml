@@ -4,11 +4,9 @@ on:
   push:
     branches:
       - main
-      - master
   pull_request:
     branches:
       - main
-      - master
 
 jobs:
   ci:
@@ -22,6 +20,9 @@ jobs:
     steps:
       - name: Checkout 🛎
         uses: actions/checkout@master
+
+      - name: cd web
+        run: cd web
 
       - name: Setup node env 🏗
         uses: actions/setup-node@v2.1.2
