@@ -44,11 +44,11 @@ func newServiceType(db *sqlx.DB) (*serviceType, error) {
 		return nil, err
 	}
 	return &serviceType{
-		db: db,
-		stmts: s,
+		db:           db,
+		stmts:        s,
 		filterFields: fields{"freq_days": true, "freq_miles": true},
 		searchFields: fields{"name": true},
-		searchQuery: "SELECT id, name, freq_miles, freq_days, user_id FROM vehicles.service_types WHERE user_id = ?",
+		searchQuery:  "SELECT id, name, freq_miles, freq_days, user_id FROM vehicles.service_types WHERE user_id = ?",
 	}, nil
 }
 
