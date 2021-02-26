@@ -1,9 +1,9 @@
 FROM golang:1.15 as builder
 WORKDIR /app
 COPY . .
-ENV GOBIN=/
+ENV GOBIN=/usr/local/sbin
 RUN go install -mod=mod ./cmd/...
 
 FROM debian:buster
-COPY --from=builder /server /app
-CMD ["./app"]
+COPY --from=builder /usr/local/sbin /usr/local/sbin
+CMD ["./usr/local/sbin/server"]

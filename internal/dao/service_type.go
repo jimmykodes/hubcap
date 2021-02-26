@@ -2,6 +2,7 @@ package dao
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/jimmykodes/vehicle_maintenance/internal/dto"
 	"github.com/jmoiron/sqlx"
@@ -10,7 +11,7 @@ import (
 type ServiceType interface {
 	Create(ctx context.Context, st *dto.ServiceType) error
 	Get(ctx context.Context, id, userID int64) (*dto.ServiceType, error)
-	Select(ctx context.Context, sf SearchFilters) ([]*dto.ServiceType, error)
+	Select(ctx context.Context, sf SearchFilters, userID int64) ([]*dto.ServiceType, error)
 	Update(ctx context.Context, st *dto.ServiceType, id, userID int64) error
 	Delete(ctx context.Context, id, userID int64) error
 	Close() error
@@ -24,8 +25,11 @@ const (
 )
 
 type serviceType struct {
-	db    *sqlx.DB
-	stmts statements
+	db           *sqlx.DB
+	stmts        statements
+	filterFields fields
+	searchFields fields
+	searchQuery  string
 }
 
 func newServiceType(db *sqlx.DB) (*serviceType, error) {
@@ -39,7 +43,13 @@ func newServiceType(db *sqlx.DB) (*serviceType, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &serviceType{db: db, stmts: s}, nil
+	return &serviceType{
+		db: db,
+		stmts: s,
+		filterFields: fields{"freq_days": true, "freq_miles": true},
+		searchFields: fields{"name": true},
+		searchQuery: "SELECT id, name, freq_miles, freq_days, user_id FROM vehicles.service_types WHERE user_id = ?",
+	}, nil
 }
 
 func (st *serviceType) Create(ctx context.Context, serviceType *dto.ServiceType) error {
@@ -55,8 +65,19 @@ func (st *serviceType) Get(ctx context.Context, id, userID int64) (*dto.ServiceT
 	return obj, nil
 }
 
-func (st *serviceType) Select(ctx context.Context, sf SearchFilters) ([]*dto.ServiceType, error) {
-	panic("implement me")
+func (st *serviceType) Select(ctx context.Context, sf SearchFilters, userID int64) ([]*dto.ServiceType, error) {
+	wc := sf.whereClause(st.searchFields, st.filterFields)
+	query := st.searchQuery
+	args := []interface{}{userID}
+	if q := wc.query(); q != "" {
+		query = fmt.Sprintf("%s AND %s", st.searchQuery, wc.query())
+		args = append(args, wc.args...)
+	}
+	var rows []*dto.ServiceType
+	if err := st.db.SelectContext(ctx, &rows, query, args...); err != nil {
+		return nil, err
+	}
+	return rows, nil
 }
 
 func (st *serviceType) Update(ctx context.Context, serviceType *dto.ServiceType, id, userID int64) error {

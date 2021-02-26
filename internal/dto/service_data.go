@@ -4,6 +4,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
+	"fmt"
 )
 
 var (
@@ -13,15 +14,18 @@ var (
 type ServiceData map[string]interface{}
 
 func (s *ServiceData) Scan(src interface{}) error {
-	switch src.(type) {
-	case string:
-		return json.Unmarshal([]byte(src.(string)), s)
+	if src == nil {
+		return nil
+	}
+	switch t := src.(type) {
+	case []byte:
+		return json.Unmarshal(t, s)
 	default:
-		return ErrInvalidDataType
+		return fmt.Errorf("%w: %T", ErrInvalidDataType, t)
 	}
 }
 
-func (s *ServiceData) Value() (driver.Value, error) {
+func (s ServiceData) Value() (driver.Value, error) {
 	data, err := json.Marshal(s)
 	if err != nil {
 		return nil, err

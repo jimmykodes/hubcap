@@ -13,7 +13,7 @@ type DAO struct {
 	Vehicle     Vehicle
 }
 
-func NewDAO(dbSettings settings.DB) (*DAO, error) {
+func New(dbSettings settings.DB) (*DAO, error) {
 	db, err := sqlx.Open(dbSettings.DriveName, dbSettings.DNS())
 	if err != nil {
 		return nil, err

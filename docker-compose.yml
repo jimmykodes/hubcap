@@ -5,6 +5,9 @@ services:
       context: .
       dockerfile: Dockerfile.dev
     env_file: .env
+    restart: always
+    volumes:
+    - ./var/docker/artifacts:/usr/local/sbin
     ports:
       - 80:80
   db:
