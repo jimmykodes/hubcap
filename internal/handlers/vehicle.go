@@ -72,10 +72,39 @@ func (h Vehicle) create(w http.ResponseWriter, r *http.Request, userID int64) {
 	w.WriteHeader(http.StatusCreated)
 }
 func (h Vehicle) list(w http.ResponseWriter, r *http.Request, userID int64) {
-
+	sf := dao.SearchFilters{}
+	for key, values := range r.URL.Query() {
+		// not allowing multiple values. might do later
+		var value interface{}
+		value = values[0]
+		if key == "year" {
+			var err error
+			value, err = strconv.Atoi(values[0])
+			if err != nil {
+				writeErrorResponse(w, h.logger, http.StatusBadRequest, "invalid year")
+				return
+			}
+		}
+		sf[key] = value
+	}
+	vehicles, err := h.vehicleDAO.Select(r.Context(), sf, userID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			vehicles = []*dto.Vehicle{}
+		} else {
+			h.logger.Error("error calling Select", zap.Error(err))
+			writeErrorResponse(w, h.logger, http.StatusInternalServerError, "")
+			return
+		}
+	}
+	if err := json.NewEncoder(w).Encode(vehicles); err != nil {
+		h.logger.Error("error writing data", zap.Error(err))
+		writeErrorResponse(w, h.logger, http.StatusInternalServerError, "")
+		return
+	}
 }
 func (h Vehicle) get(w http.ResponseWriter, r *http.Request, id, userID int64) {
-	service, err := h.vehicleDAO.Get(r.Context(), id, userID)
+	vehicle, err := h.vehicleDAO.Get(r.Context(), id, userID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			w.WriteHeader(http.StatusNotFound)
@@ -85,7 +114,7 @@ func (h Vehicle) get(w http.ResponseWriter, r *http.Request, id, userID int64) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	if err := json.NewEncoder(w).Encode(service); err != nil {
+	if err := json.NewEncoder(w).Encode(vehicle); err != nil {
 		h.logger.Error("error writing data", zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
 	}

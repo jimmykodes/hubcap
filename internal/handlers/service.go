@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -72,7 +73,37 @@ func (h Service) create(w http.ResponseWriter, r *http.Request, userID int64) {
 	w.WriteHeader(http.StatusCreated)
 }
 func (h Service) list(w http.ResponseWriter, r *http.Request, userID int64) {
-
+	sf := dao.SearchFilters{}
+	for key, values := range r.URL.Query() {
+		var value interface{}
+		value = values[0]
+		// not allowing multiple values. might do later
+		switch key {
+		case "service_type_id", "vehicle_id":
+			var err error
+			value, err = strconv.Atoi(values[0])
+			if err != nil {
+				writeErrorResponse(w, h.logger, http.StatusBadRequest, fmt.Sprintf("bad value for %s", key))
+				return
+			}
+		}
+		sf[key] = value
+	}
+	objs, err := h.serviceDAO.Select(r.Context(), sf, userID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			objs = []*dto.Service{}
+		} else {
+			h.logger.Error("error calling Select", zap.Error(err))
+			writeErrorResponse(w, h.logger, http.StatusInternalServerError, "")
+			return
+		}
+	}
+	if err := json.NewEncoder(w).Encode(objs); err != nil {
+		h.logger.Error("error writing data", zap.Error(err))
+		writeErrorResponse(w, h.logger, http.StatusInternalServerError, "")
+		return
+	}
 }
 func (h Service) get(w http.ResponseWriter, r *http.Request, id, userID int64) {
 	service, err := h.serviceDAO.Get(r.Context(), id, userID)
