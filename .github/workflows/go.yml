@@ -7,8 +7,7 @@ on:
     branches: [ main ]
 
 jobs:
-
-  build:
+  lint:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -25,3 +24,6 @@ jobs:
       uses: golangci/golangci-lint-action@v2.5.1
       with:
         version: latest
+
+    - name: Run goimports
+      uses: Jerome1337/goimports-action@v1.0.3
