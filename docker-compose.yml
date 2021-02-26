@@ -1,0 +1,25 @@
+version: '3'
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    env_file: .env
+    restart: always
+    volumes:
+    - ./var/docker/artifacts:/usr/local/sbin
+    ports:
+      - 80:80
+  db:
+    image: library/mariadb:10
+    volumes:
+      - ./docker/dbinit:/docker-entrypoint-initdb.d
+      - ./var/db/data:/var/lib/mysql
+    env_file: .env
+    ports:
+    - 3308:3306
+    environment:
+      MYSQL_RANDOM_ROOT_PASSWORD: 1
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_DATABASE}
