@@ -5,5 +5,8 @@ ENV GOBIN=/usr/local/sbin
 RUN go install -mod=mod ./cmd/...
 
 FROM debian:buster
+RUN apt-get update --fix-missing && \
+    apt-get install -yqq \
+    ca-certificates
 COPY --from=builder /usr/local/sbin /usr/local/sbin
 CMD ["./usr/local/sbin/server"]

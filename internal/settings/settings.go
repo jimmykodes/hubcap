@@ -17,9 +17,16 @@ func NewSettings() (*Settings, error) {
 }
 
 type Settings struct {
-	Debug    bool   `env:"DEBUG"`
-	LogLevel string `env:"LOG_LEVEL"`
-	DB       DB
+	Debug      bool   `env:"DEBUG"`
+	LogLevel   string `env:"LOG_LEVEL"`
+	DB         DB
+	GitHubAuth GitHubAuth
+}
+
+type GitHubAuth struct {
+	ID          string `env:"GITHUB_CLIENT_ID"`
+	Secret      string `env:"GITHUB_CLIENT_SECRET"`
+	RedirectURL string `env:"GITHUB_REDIRECT_URL"`
 }
 
 type DB struct {

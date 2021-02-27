@@ -5,7 +5,7 @@ use vehicles;
 create table if not exists users
 (
     id         int auto_increment primary key,
-    email      varchar(255) unique not null,
+    username      varchar(255) unique not null,
     api_key    varchar(36) unique  not null,
     super_user tinyint(1)          not null
 );
