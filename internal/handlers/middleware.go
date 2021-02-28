@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"net/http"
 
 	"github.com/jimmykodes/vehicle_maintenance/internal/dao"
@@ -68,11 +70,20 @@ func (m *Middleware) Auth(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		apiKey := r.Header.Get("X-API-KEY")
 		if apiKey == "" {
-			m.writeError(w, http.StatusUnauthorized, "missing api key")
-			return
+			apiKeyCookie, err := r.Cookie("apiKey")
+			if err != nil || apiKeyCookie.Value == "" {
+				// only possible error is http.ErrNoCookie
+				m.writeError(w, http.StatusUnauthorized, "missing api key")
+				return
+			}
+			apiKey = apiKeyCookie.Value
 		}
 		user, err := m.userDAO.GetFromApiKey(r.Context(), apiKey)
 		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				m.writeError(w, http.StatusUnauthorized, "invalid API key")
+				return
+			}
 			m.writeError(w, http.StatusInternalServerError, "")
 			return
 		}
