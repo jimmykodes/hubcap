@@ -29,15 +29,17 @@ func main() {
 		serviceHandler     = handlers.NewService(logger, daos.Service)
 		serviceTypeHandler = handlers.NewServiceType(logger, daos.ServiceType)
 		vehicleHandler     = handlers.NewVehicle(logger, daos.Vehicle)
+		authHandler        = handlers.NewAuth(logger, daos.User, appSettings.GitHubAuth)
 	)
 	r := mux.NewRouter()
-
 	r.Handle("/vehicle", mw.Reduce(vehicleHandler.List, mw.Standard...))
 	r.Handle("/vehicle/{id:[0-9]+}", mw.Reduce(vehicleHandler.Detail, mw.Standard...))
 	r.Handle("/service", mw.Reduce(serviceHandler.List, mw.Standard...))
 	r.Handle("/service/{id:[0-9]+}", mw.Reduce(serviceHandler.Detail, mw.Standard...))
 	r.Handle("/service_type", mw.Reduce(serviceTypeHandler.List, mw.Standard...))
 	r.Handle("/service_type/{id:[0-9]+}", mw.Reduce(serviceTypeHandler.Detail, mw.Standard...))
+	r.Handle("/oauth/login", http.HandlerFunc(authHandler.Login))
+	r.Handle("/oauth/callback", http.HandlerFunc(authHandler.Callback))
 
 	logger.Info("running", zap.Any("settings", appSettings))
 	err = http.ListenAndServe(":80", r)

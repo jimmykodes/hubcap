@@ -9,9 +9,10 @@ import (
 	"strconv"
 
 	"github.com/gorilla/mux"
+	"go.uber.org/zap"
+
 	"github.com/jimmykodes/vehicle_maintenance/internal/dao"
 	"github.com/jimmykodes/vehicle_maintenance/internal/dto"
-	"go.uber.org/zap"
 )
 
 type ServiceType struct {
