@@ -105,21 +105,23 @@ func (h Auth) oAuth2Handler(w http.ResponseWriter, r *http.Request) string {
 			h.logger.Error("error retrieving user from DB", zap.Error(err))
 			return errorRedirect
 		}
-		if err := h.userDAO.Create(r.Context(), &dto.User{Username: username}); err != nil {
+		user, err = h.userDAO.Create(r.Context(), &dto.User{Username: username})
+		if err != nil {
 			h.logger.Error("error creating user", zap.Error(err), zap.String("username", username))
 			return errorRedirect
 		}
-		user, err = h.userDAO.GetFromUsername(r.Context(), username)
-		if err != nil {
-			h.logger.Error("error getting user after user creation", zap.Error(err), zap.String("username", username))
-			return errorRedirect
-		}
+	}
+	expires := time.Now().Add(time.Hour * 24)
+	session, err := h.userDAO.CreateSession(r.Context(), user, expires)
+	if err != nil {
+		h.logger.Error("error creating user session", zap.Error(err), zap.String("username", username))
+		return errorRedirect
 	}
 	http.SetCookie(w, &http.Cookie{
-		Name:     "apiKey",
-		Value:    user.ApiKey,
+		Name:     "session",
+		Value:    session,
 		Path:     "/",
-		Expires:  time.Now().Add(time.Hour * 24),
+		Expires:  expires,
 		Secure:   false,
 		HttpOnly: true,
 	})
