@@ -43,10 +43,10 @@ type user struct {
 func newUser(db *sqlx.DB) (*user, error) {
 	queries := map[stmt]string{
 		createUser:          "INSERT INTO vehicles.users (username, api_key, super_user) value (?, ?, ?);",
-		createSession:       "INSERT INTO vehicles.sessions (key, user_id, expires) value (?, ?, ?)",
+		createSession:       "INSERT INTO vehicles.sessions (`key`, user_id, expires) value (?, ?, ?)",
 		getUser:             "SELECT id, username, api_key, super_user FROM vehicles.users WHERE id = ?;",
 		getUserFromApiKey:   "SELECT id, username, api_key, super_user FROM vehicles.users WHERE api_key = ?;",
-		getUserFromSession:  `SELECT u.id, u.username, u.api_key, u.super_user FROM vehicles.users u JOIN vehicles.sessions s on u.id = s.user_id WHERE s.key = ? and s.expires > ?;`,
+		getUserFromSession:  "SELECT u.id, u.username, u.api_key, u.super_user FROM vehicles.users u JOIN vehicles.sessions s on u.id = s.user_id WHERE s.`key` = ? and s.expires > ?;",
 		getUserFromUsername: "SELECT id, username, api_key, super_user FROM vehicles.users WHERE username = ?;",
 		updateUser:          "UPDATE vehicles.users SET username = ?, super_user = ? WHERE id = ?;",
 		updateApiKey:        "UPDATE vehicles.users SET api_key = ? WHERE id = ?;",
