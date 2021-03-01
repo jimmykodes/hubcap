@@ -72,7 +72,7 @@ export default {
     },
   },
   created() {
-    this.$axios.$get('/user/me').then((user) => {
+    this.$axios.$get('/users/me').then((user) => {
       this.$store.commit('auth/setUser', user)
     })
   },
