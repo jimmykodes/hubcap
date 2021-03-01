@@ -4,12 +4,14 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"github.com/jimmykodes/vehicle_maintenance/internal/dto"
 	"net/http"
 	"time"
 
-	"github.com/jimmykodes/vehicle_maintenance/internal/dao"
+	"github.com/jimmykodes/vehicle_maintenance/internal/dto"
+
 	"go.uber.org/zap"
+
+	"github.com/jimmykodes/vehicle_maintenance/internal/dao"
 )
 
 type MiddlewareFunc func(h http.HandlerFunc) http.HandlerFunc

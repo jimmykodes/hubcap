@@ -6,10 +6,12 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/jimmykodes/vehicle_maintenance/internal/settings"
+	"net/http"
+
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/endpoints"
-	"net/http"
+
+	"github.com/jimmykodes/vehicle_maintenance/internal/settings"
 )
 
 type Github struct {

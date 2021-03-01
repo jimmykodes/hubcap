@@ -3,13 +3,15 @@ package handlers
 import (
 	"database/sql"
 	"errors"
+	"net/http"
+	"time"
+
+	"go.uber.org/zap"
+
 	"github.com/jimmykodes/vehicle_maintenance/internal/auth"
 	"github.com/jimmykodes/vehicle_maintenance/internal/dao"
 	"github.com/jimmykodes/vehicle_maintenance/internal/dto"
 	"github.com/jimmykodes/vehicle_maintenance/internal/settings"
-	"go.uber.org/zap"
-	"net/http"
-	"time"
 )
 
 const errorRedirect = "/#error"

@@ -5,8 +5,9 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/jimmykodes/vehicle_maintenance/internal/dto"
 	"github.com/jmoiron/sqlx"
+
+	"github.com/jimmykodes/vehicle_maintenance/internal/dto"
 )
 
 type User interface {

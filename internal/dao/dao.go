@@ -1,9 +1,10 @@
 package dao
 
 import (
-	"github.com/jimmykodes/vehicle_maintenance/internal/settings"
 	"github.com/jmoiron/sqlx"
 	"go.uber.org/multierr"
+
+	"github.com/jimmykodes/vehicle_maintenance/internal/settings"
 )
 
 type DAO struct {

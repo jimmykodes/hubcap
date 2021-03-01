@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/jimmykodes/vehicle_maintenance/internal/dto"
 	"github.com/jmoiron/sqlx"
+
+	"github.com/jimmykodes/vehicle_maintenance/internal/dto"
 )
 
 type Vehicle interface {
