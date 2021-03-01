@@ -54,12 +54,12 @@ export default {
       this.loading.vehicles = true
       return this.$axios
         .$get('/vehicles')
-        .then((vehicles) => (this.vehicles = vehicles))
-        .catch((err) => console.error(err))
-        .finally(() => {
-          this.loading.vehicles = false
+        .then((vehicles) => {
+          this.vehicles = vehicles
           this.dialog = false
         })
+        .catch((err) => console.error(err))
+        .finally(() => (this.loading.vehicles = false))
     },
     saveVehicle(vehicle) {
       this.loading.save = true
