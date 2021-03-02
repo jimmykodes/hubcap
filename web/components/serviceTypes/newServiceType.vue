@@ -1,17 +1,23 @@
 <template>
   <v-card>
-    <v-card-title>New Service Type</v-card-title>
+    <v-card-title>{{ value.id ? 'Edit' : 'New' }} Service Type</v-card-title>
     <v-container>
-      <v-text-field v-model="name" label="Name"></v-text-field>
       <v-text-field
-        v-model="miles"
-        label="Frequency - Miles"
-        type="number"
+        :value="value.name"
+        label="Name"
+        @input="emit('name', $event)"
       ></v-text-field>
       <v-text-field
-        v-model="days"
+        :value="value.freq_miles"
+        label="Frequency - Miles"
+        type="number"
+        @input="emit('freq_miles', $event)"
+      ></v-text-field>
+      <v-text-field
+        :value="value.freq_days"
         label="Frequency - Days"
         type="number"
+        @input="emit('freq_days', $event)"
       ></v-text-field>
     </v-container>
     <v-card-actions>
@@ -21,7 +27,7 @@
         :loading="loading"
         :disabled="!valid"
         color="primary"
-        @click="$emit('save', serviceType)"
+        @click="$emit('save')"
       >
         Save
       </v-btn>
@@ -30,7 +36,7 @@
 </template>
 
 <script>
-import { toNumber } from 'lodash'
+import { clone, includes, toNumber } from 'lodash'
 
 export default {
   name: 'NewServiceType',
@@ -42,22 +48,24 @@ export default {
         return false
       },
     },
+    value: {
+      type: Object,
+      required: true,
+    },
   },
-  data: () => ({
-    name: undefined,
-    miles: undefined,
-    days: undefined,
-  }),
   computed: {
     valid() {
-      return !!this.name
+      return !!this.value.name
     },
-    serviceType() {
-      return {
-        name: this.name,
-        freq_miles: toNumber(this.miles),
-        freq_days: toNumber(this.days),
+  },
+  methods: {
+    emit(field, val) {
+      const v = clone(this.value)
+      if (includes(['freq_miles', 'freq_days'], field)) {
+        val = toNumber(val)
       }
+      v[field] = val
+      this.$emit('input', v)
     },
   },
 }

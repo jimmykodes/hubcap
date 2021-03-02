@@ -2,6 +2,11 @@
   <v-card min-height="100%">
     <v-card-title>
       {{ serviceType.name }}
+      <v-spacer />
+      <card-menu
+        @edit="$emit('edit', serviceType)"
+        @delete="$emit('delete', serviceType)"
+      />
     </v-card-title>
     <v-card-text>{{ text }}</v-card-text>
   </v-card>
