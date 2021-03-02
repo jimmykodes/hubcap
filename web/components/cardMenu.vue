@@ -17,14 +17,6 @@
 <script>
 export default {
   name: 'CardMenu',
-  data() {
-    return {}
-  },
-  head() {
-    return {
-      title: 'Card Menu',
-    }
-  },
 }
 </script>
 

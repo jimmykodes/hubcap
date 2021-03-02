@@ -8,7 +8,8 @@
         @delete="$emit('delete', serviceType)"
       />
     </v-card-title>
-    <v-card-text>{{ text }}</v-card-text>
+    <v-card-subtitle>{{ text }}</v-card-subtitle>
+    <v-card-text>{{ details }}</v-card-text>
   </v-card>
 </template>
 
@@ -36,6 +37,17 @@ export default {
         str += `${this.serviceType.freq_miles} miles`
       }
       return str
+    },
+    details() {
+      let count = 'No'
+      let plural = true
+      if (this.serviceType.questions && this.serviceType.questions.length > 0) {
+        count = `${this.serviceType.questions.length}`
+        if (this.serviceType.questions.length === 1) {
+          plural = false
+        }
+      }
+      return `${count} Additional ${plural ? 'Questions' : 'Question'}`
     },
   },
 }

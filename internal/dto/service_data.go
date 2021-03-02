@@ -32,3 +32,25 @@ func (s ServiceData) Value() (driver.Value, error) {
 	}
 	return driver.Value(string(data)), nil
 }
+
+type ServiceTypeQuestions []map[string]interface{}
+
+func (s ServiceTypeQuestions) Value() (driver.Value, error) {
+	data, err := json.Marshal(s)
+	if err != nil {
+		return nil, err
+	}
+	return driver.Value(string(data)), nil
+}
+
+func (s *ServiceTypeQuestions) Scan(src interface{}) error {
+	if src == nil {
+		return nil
+	}
+	switch t := src.(type) {
+	case []byte:
+		return json.Unmarshal(t, s)
+	default:
+		return fmt.Errorf("%w: %T", ErrInvalidDataType, t)
+	}
+}

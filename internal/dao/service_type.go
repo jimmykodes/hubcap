@@ -35,9 +35,9 @@ type serviceType struct {
 
 func newServiceType(db *sqlx.DB) (*serviceType, error) {
 	q := queries{
-		createServiceType: "INSERT INTO vehicles.service_types (name, freq_miles, freq_days, user_id) VALUE (?, ?, ?, ?);",
-		getServiceType:    "SELECT id, name, freq_miles, freq_days, user_id FROM vehicles.service_types WHERE id = ? AND user_id = ?;",
-		updateServiceType: "UPDATE vehicles.service_types SET name = ?, freq_miles = ?, freq_days = ? WHERE id = ? AND user_id = ?;",
+		createServiceType: "INSERT INTO vehicles.service_types (name, freq_miles, freq_days, questions, user_id) VALUE (?, ?, ?, ?, ?);",
+		getServiceType:    "SELECT id, name, freq_miles, freq_days, questions, user_id FROM vehicles.service_types WHERE id = ? AND user_id = ?;",
+		updateServiceType: "UPDATE vehicles.service_types SET name = ?, freq_miles = ?, freq_days = ?, questions = ? WHERE id = ? AND user_id = ?;",
 		deleteServiceType: "DELETE FROM vehicles.service_types WHERE id = ? AND user_id = ?;",
 	}
 	s, err := prepareStatements(db, q)
@@ -49,12 +49,12 @@ func newServiceType(db *sqlx.DB) (*serviceType, error) {
 		stmts:        s,
 		filterFields: fields{"freq_days": true, "freq_miles": true},
 		searchFields: fields{"name": true},
-		searchQuery:  "SELECT id, name, freq_miles, freq_days, user_id FROM vehicles.service_types WHERE user_id = ?",
+		searchQuery:  "SELECT id, name, freq_miles, freq_days, questions, user_id FROM vehicles.service_types WHERE user_id = ?",
 	}, nil
 }
 
 func (st *serviceType) Create(ctx context.Context, serviceType *dto.ServiceType) error {
-	_, err := st.stmts[createServiceType].ExecContext(ctx, serviceType.Name, serviceType.FreqMiles, serviceType.FreqDays, serviceType.UserID)
+	_, err := st.stmts[createServiceType].ExecContext(ctx, serviceType.Name, serviceType.FreqMiles, serviceType.FreqDays, serviceType.Questions, serviceType.UserID)
 	return err
 }
 
@@ -82,7 +82,7 @@ func (st *serviceType) Select(ctx context.Context, sf SearchFilters, userID int6
 }
 
 func (st *serviceType) Update(ctx context.Context, serviceType *dto.ServiceType, id, userID int64) error {
-	_, err := st.stmts[updateServiceType].ExecContext(ctx, serviceType.Name, serviceType.FreqMiles, serviceType.FreqDays, id, userID)
+	_, err := st.stmts[updateServiceType].ExecContext(ctx, serviceType.Name, serviceType.FreqMiles, serviceType.FreqDays, serviceType.Questions, id, userID)
 	return err
 }
 
