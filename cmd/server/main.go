@@ -5,10 +5,11 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"go.uber.org/zap"
+
 	"github.com/jimmykodes/vehicle_maintenance/internal/dao"
 	"github.com/jimmykodes/vehicle_maintenance/internal/handlers"
 	"github.com/jimmykodes/vehicle_maintenance/internal/settings"
-	"go.uber.org/zap"
 )
 
 func main() {
@@ -29,17 +30,19 @@ func main() {
 		serviceHandler     = handlers.NewService(logger, daos.Service)
 		serviceTypeHandler = handlers.NewServiceType(logger, daos.ServiceType)
 		vehicleHandler     = handlers.NewVehicle(logger, daos.Vehicle)
+		userHandler        = handlers.NewUser(logger, daos.User)
 		authHandler        = handlers.NewAuth(logger, daos.User, appSettings.GitHubAuth)
 	)
 	r := mux.NewRouter()
-	r.Handle("/vehicle", mw.Reduce(vehicleHandler.List, mw.Standard...))
-	r.Handle("/vehicle/{id:[0-9]+}", mw.Reduce(vehicleHandler.Detail, mw.Standard...))
-	r.Handle("/service", mw.Reduce(serviceHandler.List, mw.Standard...))
-	r.Handle("/service/{id:[0-9]+}", mw.Reduce(serviceHandler.Detail, mw.Standard...))
-	r.Handle("/service_type", mw.Reduce(serviceTypeHandler.List, mw.Standard...))
-	r.Handle("/service_type/{id:[0-9]+}", mw.Reduce(serviceTypeHandler.Detail, mw.Standard...))
-	r.Handle("/oauth/login", http.HandlerFunc(authHandler.Login))
-	r.Handle("/oauth/callback", http.HandlerFunc(authHandler.Callback))
+	r.Handle("/vehicles", mw.Reduce(vehicleHandler.List, mw.Standard...))
+	r.Handle("/vehicles/{id:[0-9]+}", mw.Reduce(vehicleHandler.Detail, mw.Standard...))
+	r.Handle("/services", mw.Reduce(serviceHandler.List, mw.Standard...))
+	r.Handle("/services/{id:[0-9]+}", mw.Reduce(serviceHandler.Detail, mw.Standard...))
+	r.Handle("/service_types", mw.Reduce(serviceTypeHandler.List, mw.Standard...))
+	r.Handle("/service_types/{id:[0-9]+}", mw.Reduce(serviceTypeHandler.Detail, mw.Standard...))
+	r.Handle("/users/me", mw.Reduce(userHandler.Me, mw.Standard...))
+	r.Handle("/oauth/login", mw.Reduce(authHandler.Login, mw.Log))
+	r.Handle("/oauth/callback", mw.Reduce(authHandler.Callback, mw.Log))
 
 	logger.Info("running", zap.Any("settings", appSettings))
 	err = http.ListenAndServe(":80", r)

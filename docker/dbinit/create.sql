@@ -33,6 +33,7 @@ create table if not exists service_types
     name       varchar(255) not null,
     freq_miles int,
     freq_days  int,
+    questions  text,
     user_id    int          not null
 );
 

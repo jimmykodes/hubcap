@@ -90,13 +90,12 @@ func (h Vehicle) list(w http.ResponseWriter, r *http.Request, userID int64) {
 	}
 	vehicles, err := h.vehicleDAO.Select(r.Context(), sf, userID)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			vehicles = []*dto.Vehicle{}
-		} else {
-			h.logger.Error("error calling Select", zap.Error(err))
-			writeErrorResponse(w, h.logger, http.StatusInternalServerError, "")
-			return
-		}
+		h.logger.Error("error calling Select", zap.Error(err))
+		writeErrorResponse(w, h.logger, http.StatusInternalServerError, "")
+		return
+	}
+	if vehicles == nil {
+		vehicles = make([]*dto.Vehicle, 0)
 	}
 	if err := json.NewEncoder(w).Encode(vehicles); err != nil {
 		h.logger.Error("error writing data", zap.Error(err))

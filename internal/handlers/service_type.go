@@ -92,13 +92,12 @@ func (h ServiceType) list(w http.ResponseWriter, r *http.Request, userID int64) 
 	}
 	objs, err := h.serviceTypeDAO.Select(r.Context(), sf, userID)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			objs = []*dto.ServiceType{}
-		} else {
-			h.logger.Error("error calling Select", zap.Error(err))
-			writeErrorResponse(w, h.logger, http.StatusInternalServerError, "")
-			return
-		}
+		h.logger.Error("error calling Select", zap.Error(err))
+		writeErrorResponse(w, h.logger, http.StatusInternalServerError, "")
+		return
+	}
+	if objs == nil {
+		objs = []*dto.ServiceType{}
 	}
 	if err := json.NewEncoder(w).Encode(objs); err != nil {
 		h.logger.Error("error writing data", zap.Error(err))
