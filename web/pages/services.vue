@@ -23,6 +23,7 @@
     </v-row>
     <v-dialog v-model="dialog" max-width="500px">
       <new-service
+        v-model="service"
         :vehicles="vehicles"
         :service-types="serviceTypes"
         :loading="loading.save"
@@ -34,6 +35,7 @@
 </template>
 
 <script>
+import { delay } from 'lodash'
 import Service from '~/components/services/service'
 import NewService from '~/components/services/newService'
 export default {
@@ -50,7 +52,13 @@ export default {
     vehicles: [],
     serviceTypes: [],
     services: [],
+    service: {},
   }),
+  watch: {
+    dialog() {
+      delay(() => (this.service = {}), 100)
+    },
+  },
   created() {
     this.getServices()
     this.getServiceTypes()
@@ -79,10 +87,10 @@ export default {
         .catch((err) => console.error(err))
         .finally(() => (this.loading.services = false))
     },
-    saveService(service) {
+    saveService() {
       this.loading.save = false
       this.$axios
-        .$post('/services', service)
+        .$post('/services', this.service)
         .then(() => {
           this.dialog = false
           this.getServices()
