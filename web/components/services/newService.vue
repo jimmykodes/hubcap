@@ -1,6 +1,6 @@
 <template>
   <v-card>
-    <v-card-title>New Service</v-card-title>
+    <v-card-title>{{ value.id ? 'Edit' : 'New' }} Service</v-card-title>
     <v-container>
       <v-row dense>
         <v-col>
@@ -32,10 +32,7 @@
             item-value="id"
             item-text="name"
             label="Service Type"
-            @input="
-              setServiceType($event)
-              emit('service_type_id', $event)
-            "
+            @input="emit('service_type_id', $event)"
           ></v-select>
         </v-col>
       </v-row>
@@ -140,7 +137,7 @@
         :loading="loading"
         :disabled="!valid"
         color="primary"
-        @click="$emit('save', service)"
+        @click="$emit('save')"
       >
         Save
       </v-btn>
@@ -175,12 +172,7 @@ export default {
     },
   },
   data: () => ({
-    date: undefined,
-    odometer: undefined,
-    serviceType: undefined,
     serviceTypeID: undefined,
-    vehicle: undefined,
-    data: {},
     datePicker: false,
   }),
   computed: {
@@ -195,16 +187,9 @@ export default {
         (i) => !!i
       )
     },
-    service() {
-      return {
-        service_type_id: this.serviceTypeID,
-        vehicle_id: this.vehicle,
-        odometer: toNumber(this.odometer),
-        data: this.data,
-      }
-    },
     questions() {
-      return get(this.serviceType, 'questions', [])
+      const st = find(this.serviceTypes, { id: this.value.service_type_id })
+      return get(st, 'questions', [])
     },
   },
   methods: {
@@ -237,11 +222,6 @@ export default {
     },
     tickLabels(start, end, step) {
       return range(start, end, step)
-    },
-    setServiceType(id) {
-      this.serviceType = find(this.serviceTypes, { id })
-      // clear data if we switched service types
-      this.data = {}
     },
   },
 }
