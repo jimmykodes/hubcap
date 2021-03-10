@@ -38,7 +38,6 @@
           <v-divider></v-divider>
           <question
             :value="value.questions[index]"
-            :question-types="['text', 'multiple choice', 'number']"
             @input="updateQuestion(index, $event)"
             @delete="deleteQuestion(index)"
           />

@@ -1,12 +1,25 @@
 <template>
   <v-card>
     <v-card-title>
-      {{ service.service_type_id }} - {{ service.vehicle_id }}
+      {{ service.service_type_name }} - {{ service.vehicle_name }}
+      <v-spacer />
+      <card-menu
+        @edit="$emit('edit', service)"
+        @delete="$emit('delete', service)"
+      />
     </v-card-title>
     <v-card-text>
-      {{ service.odometer }}
-      {{ service.date }}
-      {{ service.data }}
+      <data-item title="Odometer" :value="service.odometer"></data-item>
+      <data-item
+        title="Date"
+        :value="new Date(service.date * 1000).toLocaleDateString()"
+      ></data-item>
+      <data-item
+        v-for="(v, k) in service.data"
+        :key="k"
+        :title="k"
+        :value="v"
+      ></data-item>
     </v-card-text>
   </v-card>
 </template>

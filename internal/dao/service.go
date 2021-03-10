@@ -33,10 +33,23 @@ type service struct {
 	searchQuery  string
 }
 
+const getQuery = `
+SELECT s.id, s.date, s.odometer, s.data, s.user_id, s.vehicle_id, s.service_type_id, st.name as service_type_name, v.name as vehicle_name FROM vehicles.services s
+	JOIN vehicles.service_types st on st.id = s.service_type_id
+	JOIN vehicles.vehicles v on v.id = s.vehicle_id
+WHERE s.id = ? AND s.user_id = ?;
+`
+const searchQuery = `
+SELECT s.id, s.date, s.odometer, s.data, s.user_id, s.vehicle_id, s.service_type_id, st.name as service_type_name, v.name as vehicle_name FROM vehicles.services s
+	JOIN vehicles.service_types st on st.id = s.service_type_id
+	JOIN vehicles.vehicles v on v.id = s.vehicle_id
+WHERE s.user_id = ?
+`
+
 func newService(db *sqlx.DB) (*service, error) {
 	q := queries{
 		createService: "INSERT INTO vehicles.services (date, odometer, data, user_id, vehicle_id, service_type_id) VALUE (?, ?, ?, ?, ?, ?);",
-		getService:    "SELECT id, date, odometer, data, user_id, vehicle_id, service_type_id FROM vehicles.services WHERE id = ? AND user_id = ?;",
+		getService:    getQuery,
 		updateService: "UPDATE vehicles.services SET date = ?, odometer = ?, data = ?, vehicle_id = ?, service_type_id = ? WHERE id = ? AND user_id = ?;",
 		deleteService: "DELETE FROM vehicles.services WHERE id = ? AND user_id = ?;",
 	}
@@ -53,7 +66,7 @@ func newService(db *sqlx.DB) (*service, error) {
 		stmts:        s,
 		filterFields: ff,
 		searchFields: sf,
-		searchQuery:  "SELECT id, date, odometer, data, user_id, vehicle_id, service_type_id FROM vehicles.services WHERE user_id = ?",
+		searchQuery:  searchQuery,
 	}, nil
 }
 
