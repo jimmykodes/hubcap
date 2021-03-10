@@ -74,6 +74,7 @@
           <v-radio-group
             column
             :label="q.title"
+            :value="getData(q.title)"
             class="px-3"
             @change="emitData(q.title, $event)"
           >
@@ -87,6 +88,7 @@
         </v-col>
         <v-col v-else-if="q.type === 'range'">
           <v-slider
+            :value="getData(q.title)"
             class="px-3"
             :min="q.min"
             :max="q.max"
@@ -98,6 +100,7 @@
         </v-col>
         <v-col v-else-if="q.type === 'text'">
           <v-text-field
+            :value="getData(q.title)"
             :label="q.title"
             class="px-3"
             outlined
@@ -106,6 +109,7 @@
         </v-col>
         <v-col v-else-if="q.type === 'textarea'">
           <v-textarea
+            :value="getData(q.title)"
             :label="q.title"
             class="px-3"
             outlined
@@ -114,6 +118,7 @@
         </v-col>
         <v-col v-else-if="q.type === 'number'">
           <v-text-field
+            :value="getData(q.title)"
             outlined
             :label="q.title"
             type="number"
@@ -123,6 +128,7 @@
         </v-col>
         <v-col v-else-if="q.type === 'bool'">
           <v-switch
+            :value="getData(q.title)"
             :label="q.title"
             class="px-3"
             @change="emitData(q.title, $event)"
@@ -203,6 +209,9 @@ export default {
       if (val) {
         return new Date(val * 1000).toISOString().slice(0, 10)
       }
+    },
+    getData(key) {
+      return get(this.value, `data.${key}`)
     },
     emitData(field, val, transformer) {
       const d = this.value.data || {}

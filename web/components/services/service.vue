@@ -9,9 +9,17 @@
       />
     </v-card-title>
     <v-card-text>
-      <div>Odometer: {{ service.odometer }}</div>
-      <div>Date: {{ new Date(service.date * 1000).toLocaleDateString() }}</div>
-      <div v-for="(v, k) in service.data" :key="k">{{ k }}: {{ v }}</div>
+      <data-item title="Odometer" :value="service.odometer"></data-item>
+      <data-item
+        title="Date"
+        :value="new Date(service.date * 1000).toLocaleDateString()"
+      ></data-item>
+      <data-item
+        v-for="(v, k) in service.data"
+        :key="k"
+        :title="k"
+        :value="v"
+      ></data-item>
     </v-card-text>
   </v-card>
 </template>
