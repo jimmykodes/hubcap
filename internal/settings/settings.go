@@ -19,6 +19,7 @@ func NewSettings() (*Settings, error) {
 type Settings struct {
 	Debug      bool   `env:"DEBUG"`
 	LogLevel   string `env:"LOG_LEVEL"`
+	StaticDir  string `env:"STATIC_DIR"`
 	DB         DB
 	GitHubAuth GitHubAuth
 }
