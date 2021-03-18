@@ -33,12 +33,12 @@ type serviceType struct {
 	searchQuery  string
 }
 
-func newServiceType(db *sqlx.DB) (*serviceType, error) {
+func newServiceType(db *sqlx.DB, database string) (*serviceType, error) {
 	q := queries{
-		createServiceType: "INSERT INTO vehicles.service_types (name, freq_miles, freq_days, questions, user_id) VALUE (?, ?, ?, ?, ?);",
-		getServiceType:    "SELECT id, name, freq_miles, freq_days, questions, user_id FROM vehicles.service_types WHERE id = ? AND user_id = ?;",
-		updateServiceType: "UPDATE vehicles.service_types SET name = ?, freq_miles = ?, freq_days = ?, questions = ? WHERE id = ? AND user_id = ?;",
-		deleteServiceType: "DELETE FROM vehicles.service_types WHERE id = ? AND user_id = ?;",
+		createServiceType: fmt.Sprintf("INSERT INTO %s.service_types (name, freq_miles, freq_days, questions, user_id) VALUE (?, ?, ?, ?, ?);", database),
+		getServiceType:    fmt.Sprintf("SELECT id, name, freq_miles, freq_days, questions, user_id FROM %s.service_types WHERE id = ? AND user_id = ?;", database),
+		updateServiceType: fmt.Sprintf("UPDATE %s.service_types SET name = ?, freq_miles = ?, freq_days = ?, questions = ? WHERE id = ? AND user_id = ?;", database),
+		deleteServiceType: fmt.Sprintf("DELETE FROM %s.service_types WHERE id = ? AND user_id = ?;", database),
 	}
 	s, err := prepareStatements(db, q)
 	if err != nil {
@@ -49,7 +49,7 @@ func newServiceType(db *sqlx.DB) (*serviceType, error) {
 		stmts:        s,
 		filterFields: fields{"freq_days": true, "freq_miles": true},
 		searchFields: fields{"name": true},
-		searchQuery:  "SELECT id, name, freq_miles, freq_days, questions, user_id FROM vehicles.service_types WHERE user_id = ?",
+		searchQuery:  fmt.Sprintf("SELECT id, name, freq_miles, freq_days, questions, user_id FROM %s.service_types WHERE user_id = ?", database),
 	}, nil
 }
 

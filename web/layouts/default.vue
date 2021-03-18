@@ -20,7 +20,7 @@
       <v-toolbar-title v-text="title" />
       <v-spacer />
       <v-btn v-if="loggedIn">Log Out</v-btn>
-      <v-btn v-else href="/oauth/login">Login</v-btn>
+      <v-btn v-else href="/api/oauth/login">Login</v-btn>
     </v-app-bar>
     <v-main>
       <v-container>

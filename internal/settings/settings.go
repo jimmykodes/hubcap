@@ -17,8 +17,10 @@ func NewSettings() (*Settings, error) {
 }
 
 type Settings struct {
-	Debug      bool   `env:"DEBUG"`
-	LogLevel   string `env:"LOG_LEVEL"`
+	Debug      bool   `env:"DEBUG,default=false"`
+	LogLevel   string `env:"LOG_LEVEL,default=info"`
+	Port       string `env:"PORT,default=80"`
+	StaticDir  string `env:"STATIC_DIR"`
 	DB         DB
 	GitHubAuth GitHubAuth
 }
@@ -30,7 +32,7 @@ type GitHubAuth struct {
 }
 
 type DB struct {
-	DriveName string `env:"DB_DRIVER_NAME"`
+	DriveName string `env:"DB_DRIVER_NAME,default=mysql"`
 	Host      string `env:"DB_HOST"`
 	Port      string `env:"DB_PORT"`
 	User      string `env:"DB_USER"`

@@ -33,12 +33,12 @@ type vehicle struct {
 	searchQuery  string
 }
 
-func newVehicle(db *sqlx.DB) (*vehicle, error) {
+func newVehicle(db *sqlx.DB, database string) (*vehicle, error) {
 	queries := map[stmt]string{
-		createVehicle: "INSERT INTO vehicles.vehicles (name, make, model, year, user_id) VALUE (?, ?, ?, ?, ?);",
-		getVehicle:    "SELECT id, name, make, model, year, user_id FROM vehicles.vehicles WHERE id = ? AND user_id = ?;",
-		updateVehicle: "UPDATE vehicles.vehicles SET name = ?, make = ?, model = ?, year = ? WHERE id = ? and user_id = ?;",
-		deleteVehicle: "DELETE FROM vehicles.vehicles WHERE id = ? and user_id = ?;",
+		createVehicle: fmt.Sprintf("INSERT INTO %s.vehicles (name, make, model, year, user_id) VALUE (?, ?, ?, ?, ?);", database),
+		getVehicle:    fmt.Sprintf("SELECT id, name, make, model, year, user_id FROM %s.vehicles WHERE id = ? AND user_id = ?;", database),
+		updateVehicle: fmt.Sprintf("UPDATE %s.vehicles SET name = ?, make = ?, model = ?, year = ? WHERE id = ? and user_id = ?;", database),
+		deleteVehicle: fmt.Sprintf("DELETE FROM %s.vehicles WHERE id = ? and user_id = ?;", database),
 	}
 	s, err := prepareStatements(db, queries)
 	if err != nil {
@@ -51,7 +51,7 @@ func newVehicle(db *sqlx.DB) (*vehicle, error) {
 		stmts:        s,
 		filterFields: ff,
 		searchFields: sf,
-		searchQuery:  `SELECT id, name, make, model, year, user_id FROM vehicles.vehicles WHERE user_id = ?`,
+		searchQuery:  fmt.Sprintf(`SELECT id, name, make, model, year, user_id FROM %s.vehicles WHERE user_id = ?`, database),
 	}, nil
 }
 

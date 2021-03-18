@@ -8,6 +8,9 @@ services:
     restart: always
     volumes:
       - ./var/docker/artifacts:/usr/local/sbin
+      - ./web/dist:/app/web/dist
+    ports:
+      - 8000:80
   ui:
     image: library/node:14
     volumes:
