@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 
@@ -61,7 +62,7 @@ func main() {
 	r.PathPrefix("/").Handler(fs)
 
 	logger.Info("running", zap.Any("settings", appSettings))
-	err = http.ListenAndServe(":80", r)
+	err = http.ListenAndServe(fmt.Sprintf(":%s", appSettings.Port), r)
 	if err != nil {
 		logger.Fatal("error running server", zap.Error(err))
 	}
