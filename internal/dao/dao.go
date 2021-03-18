@@ -19,19 +19,19 @@ func New(dbSettings settings.DB) (*DAO, error) {
 	if err != nil {
 		return nil, err
 	}
-	vehicle, err := newVehicle(db)
+	vehicle, err := newVehicle(db, dbSettings.Database)
 	if err != nil {
 		return nil, err
 	}
-	service, err := newService(db)
+	service, err := newService(db, dbSettings.Database)
 	if err != nil {
 		return nil, err
 	}
-	serviceType, err := newServiceType(db)
+	serviceType, err := newServiceType(db, dbSettings.Database)
 	if err != nil {
 		return nil, err
 	}
-	user, err := newUser(db)
+	user, err := newUser(db, dbSettings.Database)
 	if err != nil {
 		return nil, err
 	}

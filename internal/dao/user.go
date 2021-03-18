@@ -2,6 +2,7 @@ package dao
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -41,17 +42,17 @@ type user struct {
 	stmts statements
 }
 
-func newUser(db *sqlx.DB) (*user, error) {
+func newUser(db *sqlx.DB, database string) (*user, error) {
 	queries := map[stmt]string{
-		createUser:          "INSERT INTO vehicles.users (username, api_key, super_user) value (?, ?, ?);",
-		createSession:       "INSERT INTO vehicles.sessions (`key`, user_id, expires) value (?, ?, ?)",
-		getUser:             "SELECT id, username, api_key, super_user FROM vehicles.users WHERE id = ?;",
-		getUserFromApiKey:   "SELECT id, username, api_key, super_user FROM vehicles.users WHERE api_key = ?;",
-		getUserFromSession:  "SELECT u.id, u.username, u.api_key, u.super_user FROM vehicles.users u JOIN vehicles.sessions s on u.id = s.user_id WHERE s.`key` = ? and s.expires > ?;",
-		getUserFromUsername: "SELECT id, username, api_key, super_user FROM vehicles.users WHERE username = ?;",
-		updateUser:          "UPDATE vehicles.users SET username = ?, super_user = ? WHERE id = ?;",
-		updateApiKey:        "UPDATE vehicles.users SET api_key = ? WHERE id = ?;",
-		deleteUser:          "DELETE FROM vehicles.users WHERE id = ?",
+		createUser:          fmt.Sprintf("INSERT INTO %s.users (username, api_key, super_user) value (?, ?, ?);", database),
+		createSession:       fmt.Sprintf("INSERT INTO %s.sessions (`key`, user_id, expires) value (?, ?, ?)", database),
+		getUser:             fmt.Sprintf("SELECT id, username, api_key, super_user FROM %s.users WHERE id = ?;", database),
+		getUserFromApiKey:   fmt.Sprintf("SELECT id, username, api_key, super_user FROM %s.users WHERE api_key = ?;", database),
+		getUserFromSession:  fmt.Sprintf("SELECT u.id, u.username, u.api_key, u.super_user FROM %s.users u JOIN %s.sessions s on u.id = s.user_id WHERE s.`key` = ? and s.expires > ?;", database, database),
+		getUserFromUsername: fmt.Sprintf("SELECT id, username, api_key, super_user FROM %s.users WHERE username = ?;", database),
+		updateUser:          fmt.Sprintf("UPDATE %s.users SET username = ?, super_user = ? WHERE id = ?;", database),
+		updateApiKey:        fmt.Sprintf("UPDATE %s.users SET api_key = ? WHERE id = ?;", database),
+		deleteUser:          fmt.Sprintf("DELETE FROM %s.users WHERE id = ?", database),
 	}
 	s, err := prepareStatements(db, queries)
 	if err != nil {
