@@ -14,4 +14,7 @@ RUN go install ./cmd/...
 FROM debian:buster
 COPY --from=dist /app/dist /dist
 COPY --from=binary /server /server
+RUN apt-get update --fix-missing && \
+    apt-get install -yqq \
+    ca-certificates
 CMD "./server"
