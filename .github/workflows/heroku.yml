@@ -9,7 +9,7 @@ jobs:
     name: build and deploy
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v2.3.4
       - name: Heroku Docker Container Deploy
         uses: jctaveras/heroku-deploy@v2.1.3
         with:
