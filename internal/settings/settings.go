@@ -36,7 +36,7 @@ type DB struct {
 	User     string `env:"DB_USER"`
 	Password string `env:"DB_PASSWORD"`
 	Database string `env:"DB_DATABASE"`
-	Dsn      string `env:"DB_DSN"`
+	URL      string `env:"DATABASE_URL"`
 }
 
 func (db DB) addr() string {
@@ -47,8 +47,8 @@ func (db DB) addr() string {
 }
 
 func (db DB) DSN() string {
-	if db.Dsn != "" {
-		return db.Dsn
+	if db.URL != "" {
+		return db.URL
 	}
 	return fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", db.Host, db.Port, db.User, db.Password, db.Database)
 }
