@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/jmoiron/sqlx"
+	"github.com/jackc/pgx/v4/pgxpool"
 
 	"github.com/jimmykodes/vehicle_maintenance/internal/dto"
 )
@@ -18,97 +18,100 @@ type Service interface {
 	Close() error
 }
 
-const (
-	createService stmt = iota
-	getService
-	updateService
-	deleteService
-)
+type serviceDAO struct {
+	conn *pgxpool.Pool
 
-type service struct {
-	db           *sqlx.DB
-	stmts        statements
+	createQuery string
+	getQuery    string
+	searchQuery string
+	updateQuery string
+	deleteQuery string
+
 	filterFields fields
 	searchFields fields
-	searchQuery  string
 }
 
-func newService(db *sqlx.DB, database string) (*service, error) {
-	var getQuery = fmt.Sprintf(`
-SELECT s.id, s.date, s.odometer, s.data, s.user_id, s.vehicle_id, s.service_type_id, st.name as service_type_name, v.name as vehicle_name FROM %s.services s
-	JOIN %s.service_types st on st.id = s.service_type_id
-	JOIN %s.vehicles v on v.id = s.vehicle_id
-WHERE s.id = ? AND s.user_id = ?;
-`, database, database, database)
-	var searchQuery = fmt.Sprintf(`
-SELECT s.id, s.date, s.odometer, s.data, s.user_id, s.vehicle_id, s.service_type_id, st.name as service_type_name, v.name as vehicle_name FROM %s.services s
-	JOIN %s.service_types st on st.id = s.service_type_id
-	JOIN %s.vehicles v on v.id = s.vehicle_id
-WHERE s.user_id = ?
-`, database, database, database)
-	q := queries{
-		createService: fmt.Sprintf("INSERT INTO %s.services (date, odometer, data, user_id, vehicle_id, service_type_id) VALUE (?, ?, ?, ?, ?, ?);", database),
-		getService:    getQuery,
-		updateService: fmt.Sprintf("UPDATE %s.services SET date = ?, odometer = ?, data = ?, vehicle_id = ?, service_type_id = ? WHERE id = ? AND user_id = ?;", database),
-		deleteService: fmt.Sprintf("DELETE FROM %s.services WHERE id = ? AND user_id = ?;", database),
-	}
-	s, err := prepareStatements(db, q)
-	if err != nil {
-		return nil, err
-	}
+func newService(conn *pgxpool.Pool) (*serviceDAO, error) {
+	var getQuery = `
+SELECT s.id, s.date, s.odometer, s.data, s.user_id, s.vehicle_id, s.service_type_id, st.name as service_type_name, v.name as vehicle_name FROM services s
+	JOIN service_types st on st.id = s.service_type_id
+	JOIN vehicles v on v.id = s.vehicle_id
+WHERE s.id = $1 AND s.user_id = $2;
+`
+	var searchQuery = `
+SELECT s.id, s.date, s.odometer, s.data, s.user_id, s.vehicle_id, s.service_type_id, st.name as service_type_name, v.name as vehicle_name FROM services s
+	JOIN service_types st on st.id = s.service_type_id
+	JOIN vehicles v on v.id = s.vehicle_id
+WHERE s.user_id = $1
+`
 	// todo: figure out odometer/date gt lt logic and data logic
 	// 	might be JSON_EXTRACT_SCALAR or something?
 	ff := fields{"vehicle_id": true, "service_type_id": true}
 	sf := fields{}
-	return &service{
-		db:           db,
-		stmts:        s,
+	return &serviceDAO{
+		conn: conn,
+
+		createQuery: "INSERT INTO services (date, odometer, data, user_id, vehicle_id, service_type_id) VALUES ($1, $2, $3, $4, $5, $6);",
+		getQuery:    getQuery,
+		searchQuery: searchQuery,
+		updateQuery: "UPDATE services SET date = $1, odometer = $2, data = $3, vehicle_id = $4, service_type_id = $5 WHERE id = $6 AND user_id = $7;",
+		deleteQuery: "DELETE FROM services WHERE id = $1 AND user_id = $2;",
+
 		filterFields: ff,
 		searchFields: sf,
-		searchQuery:  searchQuery,
 	}, nil
 }
 
-func (s *service) Create(ctx context.Context, service *dto.Service) error {
-	_, err := s.stmts[createService].ExecContext(ctx, service.Date, service.Odometer, service.Data, service.UserID, service.VehicleID, service.ServiceTypeID)
+func (s *serviceDAO) Create(ctx context.Context, service *dto.Service) error {
+	_, err := s.conn.Exec(ctx, s.createQuery, service.Date, service.Odometer, service.Data, service.UserID, service.VehicleID, service.ServiceTypeID)
 	return err
 }
 
-func (s *service) Get(ctx context.Context, id, userID int64) (*dto.Service, error) {
-	obj := &dto.Service{}
-	if err := s.stmts[getService].GetContext(ctx, obj, id, userID); err != nil {
+func (s *serviceDAO) Get(ctx context.Context, id, userID int64) (*dto.Service, error) {
+	service := &dto.Service{}
+	row := s.conn.QueryRow(ctx, s.getQuery, id, userID)
+	if err := row.Scan(&service.ID, &service.Date, &service.Odometer, &service.Data, &service.UserID, &service.VehicleID, &service.ServiceTypeID, &service.ServiceTypeName, &service.VehicleName); err != nil {
 		return nil, err
 	}
-	return obj, nil
+	return service, nil
 
 }
 
-func (s *service) Select(ctx context.Context, sf SearchFilters, userID int64) ([]*dto.Service, error) {
-	wc := sf.whereClause(s.searchFields, s.filterFields)
+func (s *serviceDAO) Select(ctx context.Context, sf SearchFilters, userID int64) ([]*dto.Service, error) {
+	wc := sf.whereClause(s.searchFields, s.filterFields, 2)
 	query := s.searchQuery
 	args := []interface{}{userID}
 	if q := wc.query(); q != "" {
 		query = fmt.Sprintf("%s AND %s", s.searchQuery, wc.query())
 		args = append(args, wc.args...)
 	}
-	var rows []*dto.Service
-	if err := s.db.SelectContext(ctx, &rows, query, args...); err != nil {
+	var services []*dto.Service
+	rows, err := s.conn.Query(ctx, query, args...)
+	if err != nil {
 		return nil, err
 	}
-	return rows, nil
+	defer rows.Close()
+	for rows.Next() {
+		service := &dto.Service{}
+		if err := rows.Scan(&service.ID, &service.Date, &service.Odometer, &service.Data, &service.UserID, &service.VehicleID, &service.ServiceTypeID, &service.ServiceTypeName, &service.VehicleName); err != nil {
+			return nil, err
+		}
+		services = append(services, service)
+	}
+	return services, nil
 
 }
 
-func (s *service) Update(ctx context.Context, service *dto.Service, id, userID int64) error {
-	_, err := s.stmts[updateService].ExecContext(ctx, service.Date, service.Odometer, service.Data, service.VehicleID, service.ServiceTypeID, id, userID)
+func (s *serviceDAO) Update(ctx context.Context, service *dto.Service, id, userID int64) error {
+	_, err := s.conn.Exec(ctx, s.updateQuery, service.Date, service.Odometer, service.Data, service.VehicleID, service.ServiceTypeID, id, userID)
 	return err
 }
 
-func (s *service) Delete(ctx context.Context, id, userID int64) error {
-	_, err := s.stmts[deleteService].ExecContext(ctx, id, userID)
+func (s *serviceDAO) Delete(ctx context.Context, id, userID int64) error {
+	_, err := s.conn.Exec(ctx, s.deleteQuery, id, userID)
 	return err
 }
 
-func (s *service) Close() error {
-	return s.stmts.Close()
+func (s *serviceDAO) Close() error {
+	return nil
 }

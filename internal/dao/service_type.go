@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/jmoiron/sqlx"
+	"github.com/jackc/pgx/v4/pgxpool"
 
 	"github.com/jimmykodes/vehicle_maintenance/internal/dto"
 )
@@ -18,79 +18,82 @@ type ServiceType interface {
 	Close() error
 }
 
-const (
-	createServiceType stmt = iota
-	getServiceType
-	updateServiceType
-	deleteServiceType
-)
+type serviceTypeDAO struct {
+	conn *pgxpool.Pool
 
-type serviceType struct {
-	db           *sqlx.DB
-	stmts        statements
+	createQuery string
+	getQuery    string
+	searchQuery string
+	updateQuery string
+	deleteQuery string
+
 	filterFields fields
 	searchFields fields
-	searchQuery  string
 }
 
-func newServiceType(db *sqlx.DB, database string) (*serviceType, error) {
-	q := queries{
-		createServiceType: fmt.Sprintf("INSERT INTO %s.service_types (name, freq_miles, freq_days, questions, user_id) VALUE (?, ?, ?, ?, ?);", database),
-		getServiceType:    fmt.Sprintf("SELECT id, name, freq_miles, freq_days, questions, user_id FROM %s.service_types WHERE id = ? AND user_id = ?;", database),
-		updateServiceType: fmt.Sprintf("UPDATE %s.service_types SET name = ?, freq_miles = ?, freq_days = ?, questions = ? WHERE id = ? AND user_id = ?;", database),
-		deleteServiceType: fmt.Sprintf("DELETE FROM %s.service_types WHERE id = ? AND user_id = ?;", database),
-	}
-	s, err := prepareStatements(db, q)
-	if err != nil {
-		return nil, err
-	}
-	return &serviceType{
-		db:           db,
-		stmts:        s,
+func newServiceType(conn *pgxpool.Pool) (*serviceTypeDAO, error) {
+	return &serviceTypeDAO{
+		conn: conn,
+
+		createQuery: "INSERT INTO service_types (name, freq_miles, freq_days, questions, user_id) VALUES ($1, $2, $3, $4, $5);",
+		getQuery:    "SELECT id, name, freq_miles, freq_days, questions, user_id FROM service_types WHERE id = $1 AND user_id = $2;",
+		searchQuery: "SELECT id, name, freq_miles, freq_days, questions, user_id FROM service_types WHERE user_id = $1",
+		updateQuery: "UPDATE service_types SET name = $1, freq_miles = $2, freq_days = $3, questions = $4 WHERE id = $5 AND user_id = $6;",
+		deleteQuery: "DELETE FROM service_types WHERE id = $1 AND user_id = $2;",
+
 		filterFields: fields{"freq_days": true, "freq_miles": true},
 		searchFields: fields{"name": true},
-		searchQuery:  fmt.Sprintf("SELECT id, name, freq_miles, freq_days, questions, user_id FROM %s.service_types WHERE user_id = ?", database),
 	}, nil
 }
 
-func (st *serviceType) Create(ctx context.Context, serviceType *dto.ServiceType) error {
-	_, err := st.stmts[createServiceType].ExecContext(ctx, serviceType.Name, serviceType.FreqMiles, serviceType.FreqDays, serviceType.Questions, serviceType.UserID)
+func (st *serviceTypeDAO) Create(ctx context.Context, serviceType *dto.ServiceType) error {
+	_, err := st.conn.Exec(ctx, st.createQuery, serviceType.Name, serviceType.FreqMiles, serviceType.FreqDays, serviceType.Questions, serviceType.UserID)
 	return err
 }
 
-func (st *serviceType) Get(ctx context.Context, id, userID int64) (*dto.ServiceType, error) {
-	obj := &dto.ServiceType{}
-	if err := st.stmts[getServiceType].GetContext(ctx, obj, id, userID); err != nil {
+func (st *serviceTypeDAO) Get(ctx context.Context, id, userID int64) (*dto.ServiceType, error) {
+	serviceType := &dto.ServiceType{}
+	row := st.conn.QueryRow(ctx, st.getQuery, id, userID)
+	if err := row.Scan(&serviceType.ID, &serviceType.Name, &serviceType.FreqMiles, &serviceType.FreqDays, &serviceType.Questions, &serviceType.UserID); err != nil {
 		return nil, err
 	}
-	return obj, nil
+	return serviceType, nil
 }
 
-func (st *serviceType) Select(ctx context.Context, sf SearchFilters, userID int64) ([]*dto.ServiceType, error) {
-	wc := sf.whereClause(st.searchFields, st.filterFields)
+func (st *serviceTypeDAO) Select(ctx context.Context, sf SearchFilters, userID int64) ([]*dto.ServiceType, error) {
+	wc := sf.whereClause(st.searchFields, st.filterFields, 2)
 	query := st.searchQuery
 	args := []interface{}{userID}
 	if q := wc.query(); q != "" {
 		query = fmt.Sprintf("%s AND %s", st.searchQuery, wc.query())
 		args = append(args, wc.args...)
 	}
-	var rows []*dto.ServiceType
-	if err := st.db.SelectContext(ctx, &rows, query, args...); err != nil {
+	var serviceTypes []*dto.ServiceType
+	rows, err := st.conn.Query(ctx, query, args...)
+	if err != nil {
 		return nil, err
 	}
-	return rows, nil
+	defer rows.Close()
+	for rows.Next() {
+		serviceType := &dto.ServiceType{}
+		if err := rows.Scan(&serviceType.ID, &serviceType.Name, &serviceType.FreqMiles, &serviceType.FreqDays, &serviceType.Questions, &serviceType.UserID); err != nil {
+			return nil, err
+		}
+		serviceTypes = append(serviceTypes, serviceType)
+	}
+	return serviceTypes, nil
 }
 
-func (st *serviceType) Update(ctx context.Context, serviceType *dto.ServiceType, id, userID int64) error {
-	_, err := st.stmts[updateServiceType].ExecContext(ctx, serviceType.Name, serviceType.FreqMiles, serviceType.FreqDays, serviceType.Questions, id, userID)
+func (st *serviceTypeDAO) Update(ctx context.Context, serviceType *dto.ServiceType, id, userID int64) error {
+	_, err := st.conn.Exec(ctx, st.updateQuery, serviceType.Name, serviceType.FreqMiles, serviceType.FreqDays, serviceType.Questions, id, userID)
 	return err
 }
 
-func (st *serviceType) Delete(ctx context.Context, id, userID int64) error {
-	_, err := st.stmts[deleteServiceType].ExecContext(ctx, id, userID)
+func (st *serviceTypeDAO) Delete(ctx context.Context, id, userID int64) error {
+	_, err := st.conn.Exec(ctx, st.deleteQuery, id, userID)
 	return err
 }
 
-func (st *serviceType) Close() error {
-	return st.stmts.Close()
+func (st *serviceTypeDAO) Close() error {
+	return nil
 }

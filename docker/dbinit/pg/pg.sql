@@ -17,7 +17,7 @@ create table if not exists services
     id              serial primary key,
     date            int not null,
     odometer        int not null,
-    data            text,
+    data            json,
     user_id         int not null,
     vehicle_id      int not null,
     service_type_id int not null
@@ -29,7 +29,7 @@ create table if not exists service_types
     name       varchar(255) not null,
     freq_miles int,
     freq_days  int,
-    questions  text,
+    questions  json,
     user_id    int          not null
 );
 

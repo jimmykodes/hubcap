@@ -1,16 +1,19 @@
 package dao
 
 import (
+	"context"
 	_ "database/sql"
+	"fmt"
 
-	"github.com/jmoiron/sqlx"
+	"github.com/jackc/pgx/v4/pgxpool"
 	_ "github.com/lib/pq"
-	"go.uber.org/multierr"
 
 	"github.com/jimmykodes/vehicle_maintenance/internal/settings"
 )
 
 type DAO struct {
+	conn *pgxpool.Pool
+
 	Service     Service
 	ServiceType ServiceType
 	User        User
@@ -18,27 +21,28 @@ type DAO struct {
 }
 
 func New(dbSettings settings.DB) (*DAO, error) {
-	db, err := sqlx.Open(dbSettings.DriveName, dbSettings.DNS())
+	conn, err := pgxpool.Connect(context.Background(), dbSettings.DSN())
 	if err != nil {
 		return nil, err
 	}
-	vehicle, err := newVehicle(db, dbSettings.Database)
+	vehicle, err := newVehicle(conn)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error creating vehicleDAO dao: %w", err)
 	}
-	service, err := newService(db, dbSettings.Database)
+	service, err := newService(conn)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error creating serviceDAO dao: %w", err)
 	}
-	serviceType, err := newServiceType(db, dbSettings.Database)
+	serviceType, err := newServiceType(conn)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error creating serviceDAO type dao: %w", err)
 	}
-	user, err := newUser(db, dbSettings.Database)
+	user, err := newUserDAO(conn)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error creating userDAO dao: %w", err)
 	}
 	return &DAO{
+		conn:        conn,
 		Vehicle:     vehicle,
 		Service:     service,
 		ServiceType: serviceType,
@@ -46,11 +50,6 @@ func New(dbSettings settings.DB) (*DAO, error) {
 	}, nil
 }
 
-func (d DAO) Close() error {
-	return multierr.Combine(
-		d.Service.Close(),
-		d.ServiceType.Close(),
-		d.User.Close(),
-		d.Vehicle.Close(),
-	)
+func (d DAO) Close() {
+	d.conn.Close()
 }

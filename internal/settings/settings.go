@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/Netflix/go-env"
-	"github.com/go-sql-driver/mysql"
 )
 
 func NewSettings() (*Settings, error) {
@@ -32,13 +31,12 @@ type GitHubAuth struct {
 }
 
 type DB struct {
-	DriveName string `env:"DB_DRIVER_NAME,default=mysql"`
-	Host      string `env:"DB_HOST"`
-	Port      int    `env:"DB_PORT"`
-	User      string `env:"DB_USER"`
-	Password  string `env:"DB_PASSWORD"`
-	Database  string `env:"DB_DATABASE"`
-	Dns       string `env:"DB_DNS"`
+	Host     string `env:"DB_HOST"`
+	Port     int    `env:"DB_PORT"`
+	User     string `env:"DB_USER"`
+	Password string `env:"DB_PASSWORD"`
+	Database string `env:"DB_DATABASE"`
+	Dsn      string `env:"DB_DSN"`
 }
 
 func (db DB) addr() string {
@@ -48,22 +46,9 @@ func (db DB) addr() string {
 	return db.Host
 }
 
-func (db DB) DNS() string {
-	if db.Dns != "" {
-		return db.Dns
+func (db DB) DSN() string {
+	if db.Dsn != "" {
+		return db.Dsn
 	}
-	switch db.DriveName {
-	case "mysql":
-		return (&mysql.Config{
-			User:                 db.User,
-			Passwd:               db.Password,
-			Net:                  "tcp",
-			Addr:                 db.addr(),
-			AllowNativePasswords: true,
-		}).FormatDSN()
-	case "pg":
-		return fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", db.Host, db.Port, db.User, db.Password, db.Database)
-	default:
-		return ""
-	}
+	return fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", db.Host, db.Port, db.User, db.Password, db.Database)
 }

@@ -30,19 +30,6 @@ services:
       - ui
       - api
 
-  db:
-    image: library/mariadb:10
-    volumes:
-      - ./docker/dbinit/mysql:/docker-entrypoint-initdb.d:ro
-      - ./var/db/data:/var/lib/mysql
-    env_file: .env
-    ports:
-      - 3308:3306
-    environment:
-      MYSQL_RANDOM_ROOT_PASSWORD: 1
-      MYSQL_USER: ${DB_USER}
-      MYSQL_PASSWORD: ${DB_PASSWORD}
-      MYSQL_DATABASE: ${DB_DATABASE}
   pg:
     image: postgres:13
     volumes:
