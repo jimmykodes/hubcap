@@ -9,12 +9,12 @@ FROM golang:1 as binary
 WORKDIR /app
 COPY . .
 ENV GOBIN=/
-RUN go install ./cmd/...
+RUN go install .
 
 FROM debian:buster
 COPY --from=dist /app/dist /dist
-COPY --from=binary /server /server
+COPY --from=binary /vehicle_maintenance /vehicle_maintenance
 RUN apt-get update --fix-missing && \
     apt-get install -yqq \
     ca-certificates
-CMD "./server"
+CMD "./vehicle_maintenance"
