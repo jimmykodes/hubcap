@@ -34,7 +34,7 @@ type GitHubAuth struct {
 type DB struct {
 	DriveName string `env:"DB_DRIVER_NAME,default=mysql"`
 	Host      string `env:"DB_HOST"`
-	Port      string `env:"DB_PORT"`
+	Port      int    `env:"DB_PORT"`
 	User      string `env:"DB_USER"`
 	Password  string `env:"DB_PASSWORD"`
 	Database  string `env:"DB_DATABASE"`
@@ -42,8 +42,8 @@ type DB struct {
 }
 
 func (db DB) addr() string {
-	if db.Port != "" {
-		return fmt.Sprintf("%s:%s", db.Host, db.Port)
+	if db.Port != 0 {
+		return fmt.Sprintf("%s:%d", db.Host, db.Port)
 	}
 	return db.Host
 }
@@ -52,12 +52,18 @@ func (db DB) DNS() string {
 	if db.Dns != "" {
 		return db.Dns
 	}
-	conf := mysql.Config{
-		User:                 db.User,
-		Passwd:               db.Password,
-		Net:                  "tcp",
-		Addr:                 db.addr(),
-		AllowNativePasswords: true,
+	switch db.DriveName {
+	case "mysql":
+		return (&mysql.Config{
+			User:                 db.User,
+			Passwd:               db.Password,
+			Net:                  "tcp",
+			Addr:                 db.addr(),
+			AllowNativePasswords: true,
+		}).FormatDSN()
+	case "pg":
+		return fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", db.Host, db.Port, db.User, db.Password, db.Database)
+	default:
+		return ""
 	}
-	return conf.FormatDSN()
 }

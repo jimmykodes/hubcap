@@ -1,7 +1,10 @@
 package dao
 
 import (
+	_ "database/sql"
+
 	"github.com/jmoiron/sqlx"
+	_ "github.com/lib/pq"
 	"go.uber.org/multierr"
 
 	"github.com/jimmykodes/vehicle_maintenance/internal/settings"

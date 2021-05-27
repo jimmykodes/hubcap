@@ -33,7 +33,7 @@ services:
   db:
     image: library/mariadb:10
     volumes:
-      - ./docker/dbinit:/docker-entrypoint-initdb.d
+      - ./docker/dbinit/mysql:/docker-entrypoint-initdb.d:ro
       - ./var/db/data:/var/lib/mysql
     env_file: .env
     ports:
@@ -43,3 +43,14 @@ services:
       MYSQL_USER: ${DB_USER}
       MYSQL_PASSWORD: ${DB_PASSWORD}
       MYSQL_DATABASE: ${DB_DATABASE}
+  pg:
+    image: postgres:13
+    volumes:
+      - ./docker/dbinit/pg:/docker-entrypoint-initdb.d:ro
+      - ./var/db/pg_data:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_DATABASE}

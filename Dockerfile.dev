@@ -3,4 +3,4 @@ WORKDIR /app
 RUN apt-get update --fix-missing && \
     apt-get install -yqq \
     ca-certificates
-CMD ["./usr/local/sbin/server"]
+CMD ["/usr/local/sbin/server"]
