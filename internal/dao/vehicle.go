@@ -15,7 +15,6 @@ type Vehicle interface {
 	Select(ctx context.Context, sf SearchFilters, userID int64) ([]*dto.Vehicle, error)
 	Update(ctx context.Context, v *dto.Vehicle, id, userID int64) error
 	Delete(ctx context.Context, id, userID int64) error
-	Close() error
 }
 
 type vehicleDAO struct {
@@ -95,8 +94,4 @@ func (v *vehicleDAO) Update(ctx context.Context, vehicle *dto.Vehicle, id, userI
 func (v *vehicleDAO) Delete(ctx context.Context, id, userID int64) error {
 	_, err := v.conn.Exec(ctx, v.deleteQuery, id, userID)
 	return err
-}
-
-func (v *vehicleDAO) Close() error {
-	return nil
 }

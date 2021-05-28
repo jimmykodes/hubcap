@@ -15,7 +15,6 @@ type Service interface {
 	Select(ctx context.Context, sf SearchFilters, userID int64) ([]*dto.Service, error)
 	Update(ctx context.Context, s *dto.Service, id, userID int64) error
 	Delete(ctx context.Context, id, userID int64) error
-	Close() error
 }
 
 type serviceDAO struct {
@@ -110,8 +109,4 @@ func (s *serviceDAO) Update(ctx context.Context, service *dto.Service, id, userI
 func (s *serviceDAO) Delete(ctx context.Context, id, userID int64) error {
 	_, err := s.conn.Exec(ctx, s.deleteQuery, id, userID)
 	return err
-}
-
-func (s *serviceDAO) Close() error {
-	return nil
 }
