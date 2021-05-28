@@ -77,7 +77,7 @@ func (u *userDAO) getUser(ctx context.Context, q string, arg ...interface{}) (*d
 	user := &dto.User{}
 	row := u.conn.QueryRow(ctx, q, arg...)
 	if err := row.Scan(&user.ID, &user.Username, &user.ApiKey, &user.SuperUser); err != nil {
-
+		return nil, err
 	}
 	return user, nil
 }

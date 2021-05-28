@@ -39,13 +39,6 @@ type DB struct {
 	URL      string `env:"DATABASE_URL"`
 }
 
-func (db DB) addr() string {
-	if db.Port != 0 {
-		return fmt.Sprintf("%s:%d", db.Host, db.Port)
-	}
-	return db.Host
-}
-
 func (db DB) DSN() string {
 	if db.URL != "" {
 		return db.URL
