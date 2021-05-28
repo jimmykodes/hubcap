@@ -2,11 +2,9 @@ package dao
 
 import (
 	"context"
-	_ "database/sql"
 	"fmt"
 
 	"github.com/jackc/pgx/v4/pgxpool"
-	_ "github.com/lib/pq"
 
 	"github.com/jimmykodes/vehicle_maintenance/internal/settings"
 )
