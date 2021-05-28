@@ -2,9 +2,11 @@ package handlers
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"time"
 
+	"github.com/jackc/pgx/v4"
 	"go.uber.org/zap"
 
 	"github.com/jimmykodes/vehicle_maintenance/internal/auth"
@@ -124,14 +126,14 @@ func (h Auth) oAuth2Handler(w http.ResponseWriter, r *http.Request) string {
 
 func (h Auth) getUser(ctx context.Context, username string) (*dto.User, error) {
 	user, err := h.userDAO.GetFromUsername(ctx, username)
-	if err != nil {
-		return nil, err
-	}
-	if user.ID == 0 {
+	if errors.Is(err, pgx.ErrNoRows) {
 		if err = h.userDAO.Create(ctx, &dto.User{Username: username}); err != nil {
 			return nil, err
 		}
 		return h.getUser(ctx, username)
+	}
+	if err != nil {
+		return nil, err
 	}
 	return user, nil
 }
