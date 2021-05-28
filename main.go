@@ -22,10 +22,13 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	daos, err := dao.New(appSettings.DB)
 	if err != nil {
 		logger.Fatal("error creating daos", zap.Error(err))
 	}
+	defer daos.Close()
+
 	var (
 		mw                 = handlers.NewMiddleware(logger, daos.User)
 		serviceHandler     = handlers.NewService(logger, daos.Service)

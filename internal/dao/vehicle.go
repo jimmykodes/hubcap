@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/jmoiron/sqlx"
+	"github.com/jackc/pgx/v4/pgxpool"
 
 	"github.com/jimmykodes/vehicle_maintenance/internal/dto"
 )
@@ -15,84 +15,83 @@ type Vehicle interface {
 	Select(ctx context.Context, sf SearchFilters, userID int64) ([]*dto.Vehicle, error)
 	Update(ctx context.Context, v *dto.Vehicle, id, userID int64) error
 	Delete(ctx context.Context, id, userID int64) error
-	Close() error
 }
 
-const (
-	createVehicle stmt = iota
-	getVehicle
-	updateVehicle
-	deleteVehicle
-)
+type vehicleDAO struct {
+	conn *pgxpool.Pool
 
-type vehicle struct {
-	db           *sqlx.DB
-	stmts        statements
+	createQuery string
+	getQuery    string
+	searchQuery string
+	updateQuery string
+
+	deleteQuery  string
 	filterFields fields
 	searchFields fields
-	searchQuery  string
 }
 
-func newVehicle(db *sqlx.DB, database string) (*vehicle, error) {
-	queries := map[stmt]string{
-		createVehicle: fmt.Sprintf("INSERT INTO %s.vehicles (name, make, model, year, user_id) VALUE (?, ?, ?, ?, ?);", database),
-		getVehicle:    fmt.Sprintf("SELECT id, name, make, model, year, user_id FROM %s.vehicles WHERE id = ? AND user_id = ?;", database),
-		updateVehicle: fmt.Sprintf("UPDATE %s.vehicles SET name = ?, make = ?, model = ?, year = ? WHERE id = ? and user_id = ?;", database),
-		deleteVehicle: fmt.Sprintf("DELETE FROM %s.vehicles WHERE id = ? and user_id = ?;", database),
-	}
-	s, err := prepareStatements(db, queries)
-	if err != nil {
-		return nil, err
-	}
+func newVehicle(conn *pgxpool.Pool) (*vehicleDAO, error) {
 	ff := fields{"make": true, "model": true, "year": true}
 	sf := fields{"name": true}
-	return &vehicle{
-		db:           db,
-		stmts:        s,
+	return &vehicleDAO{
+		conn: conn,
+
+		createQuery: "INSERT INTO vehicles (name, make, model, year, user_id) VALUES ($1, $2, $3, $4, $5);",
+		getQuery:    "SELECT id, name, make, model, year, user_id FROM vehicles WHERE id = $1 AND user_id = $2;",
+		searchQuery: "SELECT id, name, make, model, year, user_id FROM vehicles WHERE user_id = $1",
+		updateQuery: "UPDATE vehicles SET name = $1, make = $2, model = $3, year = $4 WHERE id = $5 and user_id = $6;",
+		deleteQuery: "DELETE FROM vehicles WHERE id = $1 and user_id = $2;",
+
 		filterFields: ff,
 		searchFields: sf,
-		searchQuery:  fmt.Sprintf(`SELECT id, name, make, model, year, user_id FROM %s.vehicles WHERE user_id = ?`, database),
 	}, nil
 }
 
-func (v *vehicle) Create(ctx context.Context, vehicle *dto.Vehicle) error {
-	_, err := v.stmts[createVehicle].ExecContext(ctx, vehicle.Name, vehicle.Make, vehicle.Model, vehicle.Year, vehicle.UserID)
+func (v *vehicleDAO) Create(ctx context.Context, vehicle *dto.Vehicle) error {
+	_, err := v.conn.Exec(ctx, v.createQuery, vehicle.Name, vehicle.Make, vehicle.Model, vehicle.Year, vehicle.UserID)
 	return err
 }
 
-func (v *vehicle) Get(ctx context.Context, id, userID int64) (*dto.Vehicle, error) {
+func (v *vehicleDAO) Get(ctx context.Context, id, userID int64) (*dto.Vehicle, error) {
 	vehicle := &dto.Vehicle{}
-	if err := v.stmts[getVehicle].GetContext(ctx, vehicle, id, userID); err != nil {
+	row := v.conn.QueryRow(ctx, v.getQuery, id, userID)
+	if err := row.Scan(&vehicle.ID, &vehicle.Name, &vehicle.Make, &vehicle.Model, &vehicle.Year, &vehicle.UserID); err != nil {
 		return nil, err
 	}
 	return vehicle, nil
 }
 
-func (v *vehicle) Select(ctx context.Context, sf SearchFilters, userID int64) ([]*dto.Vehicle, error) {
-	wc := sf.whereClause(v.searchFields, v.filterFields)
+func (v *vehicleDAO) Select(ctx context.Context, sf SearchFilters, userID int64) ([]*dto.Vehicle, error) {
+	wc := sf.whereClause(v.searchFields, v.filterFields, 2)
 	query := v.searchQuery
 	args := []interface{}{userID}
 	if q := wc.query(); q != "" {
 		query = fmt.Sprintf("%s AND %s", v.searchQuery, wc.query())
 		args = append(args, wc.args...)
 	}
-	var rows []*dto.Vehicle
-	if err := v.db.SelectContext(ctx, &rows, query, args...); err != nil {
+	var vehicles []*dto.Vehicle
+
+	rows, err := v.conn.Query(ctx, query, args...)
+	if err != nil {
 		return nil, err
 	}
-	return rows, nil
+	defer rows.Close()
+	for rows.Next() {
+		vehicle := &dto.Vehicle{}
+		if err := rows.Scan(&vehicle.ID, &vehicle.Name, &vehicle.Make, &vehicle.Model, &vehicle.Year, &vehicle.UserID); err != nil {
+			return nil, err
+		}
+		vehicles = append(vehicles, vehicle)
+	}
+	return vehicles, nil
 }
 
-func (v *vehicle) Update(ctx context.Context, vehicle *dto.Vehicle, id, userID int64) error {
-	_, err := v.stmts[updateVehicle].ExecContext(ctx, vehicle.Name, vehicle.Make, vehicle.Model, vehicle.Year, id, userID)
+func (v *vehicleDAO) Update(ctx context.Context, vehicle *dto.Vehicle, id, userID int64) error {
+	_, err := v.conn.Exec(ctx, v.updateQuery, vehicle.Name, vehicle.Make, vehicle.Model, vehicle.Year, id, userID)
 	return err
 }
 
-func (v *vehicle) Delete(ctx context.Context, id, userID int64) error {
-	_, err := v.stmts[deleteVehicle].ExecContext(ctx, id, userID)
+func (v *vehicleDAO) Delete(ctx context.Context, id, userID int64) error {
+	_, err := v.conn.Exec(ctx, v.deleteQuery, id, userID)
 	return err
-}
-
-func (v *vehicle) Close() error {
-	return v.stmts.Close()
 }

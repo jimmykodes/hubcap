@@ -1,8 +1,7 @@
 package handlers
 
 import (
-	"database/sql"
-	"errors"
+	"context"
 	"net/http"
 	"time"
 
@@ -101,17 +100,10 @@ func (h Auth) oAuth2Handler(w http.ResponseWriter, r *http.Request) string {
 		h.logger.Error("Error getting user login")
 		return errorRedirect
 	}
-	user, err := h.userDAO.GetFromUsername(r.Context(), username)
+	user, err := h.getUser(r.Context(), username)
 	if err != nil {
-		if !errors.Is(err, sql.ErrNoRows) {
-			h.logger.Error("error retrieving user from DB", zap.Error(err))
-			return errorRedirect
-		}
-		user, err = h.userDAO.Create(r.Context(), &dto.User{Username: username})
-		if err != nil {
-			h.logger.Error("error creating user", zap.Error(err), zap.String("username", username))
-			return errorRedirect
-		}
+		h.logger.Error("error getting user", zap.Error(err))
+		return errorRedirect
 	}
 	expires := time.Now().Add(time.Hour * 24)
 	session, err := h.userDAO.CreateSession(r.Context(), user, expires)
@@ -128,4 +120,18 @@ func (h Auth) oAuth2Handler(w http.ResponseWriter, r *http.Request) string {
 		HttpOnly: true,
 	})
 	return "/"
+}
+
+func (h Auth) getUser(ctx context.Context, username string) (*dto.User, error) {
+	user, err := h.userDAO.GetFromUsername(ctx, username)
+	if err != nil {
+		return nil, err
+	}
+	if user.ID == 0 {
+		if err = h.userDAO.Create(ctx, &dto.User{Username: username}); err != nil {
+			return nil, err
+		}
+		return h.getUser(ctx, username)
+	}
+	return user, nil
 }

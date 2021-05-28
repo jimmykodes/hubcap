@@ -2,142 +2,116 @@ package dao
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/jmoiron/sqlx"
+	"github.com/jackc/pgx/v4/pgxpool"
 
 	"github.com/jimmykodes/vehicle_maintenance/internal/dto"
 )
 
 type User interface {
-	Create(ctx context.Context, u *dto.User) (*dto.User, error)
+	Create(ctx context.Context, u *dto.User) error
 	CreateSession(ctx context.Context, user *dto.User, expires time.Time) (string, error)
 	Get(ctx context.Context, id int64) (*dto.User, error)
 	GetFromApiKey(ctx context.Context, apiKey string) (*dto.User, error)
 	GetFromSession(ctx context.Context, session string, time int64) (*dto.User, error)
 	GetFromUsername(ctx context.Context, username string) (*dto.User, error)
-	Select(ctx context.Context, sf SearchFilters) ([]*dto.User, error)
 	Update(ctx context.Context, u *dto.User, id int64) error
 	UpdateAPIKey(ctx context.Context, id int64) error
 	Delete(ctx context.Context, id int64) error
-	Close() error
 }
 
-const (
-	createUser stmt = iota
-	createSession
-	getUser
-	getUserFromApiKey
-	getUserFromSession
-	getUserFromUsername
-	updateUser
-	updateApiKey
-	deleteUser
-)
+type userDAO struct {
+	conn *pgxpool.Pool
 
-type user struct {
-	db    *sqlx.DB
-	stmts statements
+	createUserQuery          string
+	createSessionQuery       string
+	getUserQuery             string
+	getUserFromApiKeyQuery   string
+	getUserFromSessionQuery  string
+	getUserFromUsernameQuery string
+	updateUserQuery          string
+	updateApiKeyQuery        string
+	deleteUserQuery          string
 }
 
-func newUser(db *sqlx.DB, database string) (*user, error) {
-	queries := map[stmt]string{
-		createUser:          fmt.Sprintf("INSERT INTO %s.users (username, api_key, super_user) value (?, ?, ?);", database),
-		createSession:       fmt.Sprintf("INSERT INTO %s.sessions (`key`, user_id, expires) value (?, ?, ?)", database),
-		getUser:             fmt.Sprintf("SELECT id, username, api_key, super_user FROM %s.users WHERE id = ?;", database),
-		getUserFromApiKey:   fmt.Sprintf("SELECT id, username, api_key, super_user FROM %s.users WHERE api_key = ?;", database),
-		getUserFromSession:  fmt.Sprintf("SELECT u.id, u.username, u.api_key, u.super_user FROM %s.users u JOIN %s.sessions s on u.id = s.user_id WHERE s.`key` = ? and s.expires > ?;", database, database),
-		getUserFromUsername: fmt.Sprintf("SELECT id, username, api_key, super_user FROM %s.users WHERE username = ?;", database),
-		updateUser:          fmt.Sprintf("UPDATE %s.users SET username = ?, super_user = ? WHERE id = ?;", database),
-		updateApiKey:        fmt.Sprintf("UPDATE %s.users SET api_key = ? WHERE id = ?;", database),
-		deleteUser:          fmt.Sprintf("DELETE FROM %s.users WHERE id = ?", database),
-	}
-	s, err := prepareStatements(db, queries)
-	if err != nil {
-		return nil, err
-	}
-	return &user{db: db, stmts: s}, nil
+func newUserDAO(conn *pgxpool.Pool) (*userDAO, error) {
+	return &userDAO{
+		conn: conn,
+
+		createUserQuery:          "INSERT INTO users (username, api_key, super_user) values ($1, $2, $3);",
+		createSessionQuery:       "INSERT INTO sessions (key, user_id, expires) values ($1, $2, $3)",
+		getUserQuery:             "SELECT id, username, api_key, super_user FROM users WHERE id = $1;",
+		getUserFromApiKeyQuery:   "SELECT id, username, api_key, super_user FROM users WHERE api_key = $1;",
+		getUserFromSessionQuery:  "SELECT u.id, u.username, u.api_key, u.super_user FROM users u JOIN sessions s on u.id = s.user_id WHERE s.key = $1 and s.expires > $2;",
+		getUserFromUsernameQuery: "SELECT id, username, api_key, super_user FROM users WHERE username = $1;",
+		updateUserQuery:          "UPDATE users SET username = $1, super_user = $2 WHERE id = $3;",
+		updateApiKeyQuery:        "UPDATE users SET api_key = $1 WHERE id = $2;",
+		deleteUserQuery:          "DELETE FROM users WHERE id = $1",
+	}, nil
 }
 
-func (u *user) Create(ctx context.Context, user *dto.User) (*dto.User, error) {
+func (u *userDAO) Create(ctx context.Context, user *dto.User) error {
 	apiKey, err := uuid.NewRandom()
 	if err != nil {
-		return nil, err
+		return err
 	}
-	res, err := u.stmts[createUser].ExecContext(ctx, user.Username, apiKey, user.SuperUser)
-	if err != nil {
-		return nil, err
-	}
-	user.ID, err = res.LastInsertId()
-	if err != nil {
-		return nil, err
-	}
-	user.ApiKey = apiKey.String()
-	return user, nil
+	_, err = u.conn.Exec(ctx, u.createUserQuery, user.Username, apiKey, user.SuperUser)
+	return err
 }
 
-func (u *user) CreateSession(ctx context.Context, user *dto.User, expires time.Time) (string, error) {
+func (u *userDAO) CreateSession(ctx context.Context, user *dto.User, expires time.Time) (string, error) {
 	sessionKey, err := uuid.NewRandom()
 	if err != nil {
 		return "", err
 	}
-	_, err = u.stmts[createSession].ExecContext(ctx, sessionKey, user.ID, expires.Unix())
+	_, err = u.conn.Exec(ctx, u.createSessionQuery, sessionKey, user.ID, expires.Unix())
 	if err != nil {
 		return "", err
 	}
 	return sessionKey.String(), nil
 }
 
-func (u *user) Get(ctx context.Context, id int64) (*dto.User, error) {
+func (u *userDAO) getUser(ctx context.Context, q string, arg ...interface{}) (*dto.User, error) {
 	user := &dto.User{}
-	if err := u.stmts[getUser].GetContext(ctx, user, id); err != nil {
+	row := u.conn.QueryRow(ctx, q, arg...)
+	if err := row.Scan(&user.ID, &user.Username, &user.ApiKey, &user.SuperUser); err != nil {
 		return nil, err
 	}
 	return user, nil
 }
 
-func (u *user) getUser(ctx context.Context, s stmt, arg ...interface{}) (*dto.User, error) {
-	user := &dto.User{}
-	if err := u.stmts[s].GetContext(ctx, user, arg...); err != nil {
-		return nil, err
-	}
-	return user, nil
+func (u *userDAO) Get(ctx context.Context, id int64) (*dto.User, error) {
+	return u.getUser(ctx, u.getUserQuery, id)
 }
 
-func (u *user) GetFromApiKey(ctx context.Context, apiKey string) (*dto.User, error) {
-	return u.getUser(ctx, getUserFromApiKey, apiKey)
-}
-func (u *user) GetFromUsername(ctx context.Context, username string) (*dto.User, error) {
-	return u.getUser(ctx, getUserFromUsername, username)
-}
-func (u *user) GetFromSession(ctx context.Context, session string, time int64) (*dto.User, error) {
-	return u.getUser(ctx, getUserFromSession, session, time)
+func (u *userDAO) GetFromApiKey(ctx context.Context, apiKey string) (*dto.User, error) {
+	return u.getUser(ctx, u.getUserFromApiKeyQuery, apiKey)
 }
 
-func (u *user) Select(ctx context.Context, sf SearchFilters) ([]*dto.User, error) {
-	panic("implement me")
+func (u *userDAO) GetFromUsername(ctx context.Context, username string) (*dto.User, error) {
+	return u.getUser(ctx, u.getUserFromUsernameQuery, username)
 }
 
-func (u *user) Update(ctx context.Context, user *dto.User, id int64) error {
-	_, err := u.stmts[updateUser].ExecContext(ctx, user.Username, user.SuperUser, id)
+func (u *userDAO) GetFromSession(ctx context.Context, session string, time int64) (*dto.User, error) {
+	return u.getUser(ctx, u.getUserFromSessionQuery, session, time)
+}
+
+func (u *userDAO) Update(ctx context.Context, user *dto.User, id int64) error {
+	_, err := u.conn.Exec(ctx, u.updateUserQuery, user.Username, user.SuperUser, id)
 	return err
 }
-func (u *user) UpdateAPIKey(ctx context.Context, id int64) error {
+func (u *userDAO) UpdateAPIKey(ctx context.Context, id int64) error {
 	apiKey, err := uuid.NewRandom()
 	if err != nil {
 		return err
 	}
-	_, err = u.stmts[updateApiKey].ExecContext(ctx, apiKey, id)
+	_, err = u.conn.Exec(ctx, u.updateApiKeyQuery, apiKey, id)
 	return err
 }
 
-func (u *user) Delete(ctx context.Context, id int64) error {
-	_, err := u.stmts[deleteUser].ExecContext(ctx, id)
+func (u *userDAO) Delete(ctx context.Context, id int64) error {
+	_, err := u.conn.Exec(ctx, u.deleteUserQuery, id)
 	return err
-}
-
-func (u *user) Close() error {
-	return u.stmts.Close()
 }
