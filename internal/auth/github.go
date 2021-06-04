@@ -19,12 +19,12 @@ type Github struct {
 	baseURL string
 }
 
-func NewGithub(settings settings.GitHubAuth) *Github {
+func NewGithub(settings settings.OAuth) *Github {
 	config := &oauth2.Config{
-		ClientID:     settings.ID,
-		ClientSecret: settings.Secret,
+		ClientID:     settings.GitHubID,
+		ClientSecret: settings.GitHubSecret,
 		Endpoint:     endpoints.GitHub,
-		RedirectURL:  settings.RedirectURL,
+		RedirectURL:  settings.RedirectURL("github"),
 		Scopes: []string{
 			"read:user",
 			"user:email",
@@ -35,19 +35,19 @@ func NewGithub(settings settings.GitHubAuth) *Github {
 		baseURL: "https://api.github.com",
 	}
 }
-func (g Github) AuthCodeURL() (string, string, error) {
-	state, err := newState()
+func (g Github) AuthCodeURL() (state string, url string, err error) {
+	state, err = newState()
 	if err != nil {
 		return "", "", err
 	}
 	return state, g.config.AuthCodeURL(state), nil
 }
 
-func (g Github) Exchange(code string) (*oauth2.Token, error) {
+func (g Github) exchange(code string) (*oauth2.Token, error) {
 	return g.config.Exchange(context.Background(), code)
 }
 
-func (g Github) GetUserInfo(token *oauth2.Token) (map[string]interface{}, error) {
+func (g Github) getUserInfo(token *oauth2.Token) (map[string]interface{}, error) {
 	ctx := context.Background()
 	c := g.config.Client(ctx, token)
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/user", g.baseURL), nil)
@@ -63,6 +63,22 @@ func (g Github) GetUserInfo(token *oauth2.Token) (map[string]interface{}, error)
 		return nil, err
 	}
 	return data, nil
+}
+
+func (g Github) GetUsername(code string) (username string, err error) {
+	token, err := g.exchange(code)
+	if err != nil {
+		return "", err
+	}
+	userData, err := g.getUserInfo(token)
+	if err != nil {
+		return "", err
+	}
+	username, ok := userData["login"].(string)
+	if !ok || username == "" {
+		return "", ErrNoUsername
+	}
+	return username, nil
 }
 
 func newState() (string, error) {

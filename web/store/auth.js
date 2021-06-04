@@ -22,4 +22,8 @@ export const mutations = {
     state.user = user
     sessionStorage.setItem(userKey, JSON.stringify(user))
   },
+  clearUser(state) {
+    state.user = null
+    sessionStorage.removeItem(userKey)
+  },
 }

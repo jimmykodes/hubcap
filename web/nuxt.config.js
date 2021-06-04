@@ -49,6 +49,8 @@ export default {
   axios: {
     baseURL: '/api',
   },
+  // Turn off nuxt native loading bar
+  loading: false,
 
   // Vuetify module configuration: https://go.nuxtjs.dev/config-vuetify
   vuetify: {

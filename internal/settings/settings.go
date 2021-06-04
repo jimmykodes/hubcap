@@ -16,18 +16,24 @@ func NewSettings() (*Settings, error) {
 }
 
 type Settings struct {
-	Debug      bool   `env:"DEBUG,default=false"`
-	LogLevel   string `env:"LOG_LEVEL,default=info"`
-	Port       string `env:"PORT,default=80"`
-	StaticDir  string `env:"STATIC_DIR"`
-	DB         DB
-	GitHubAuth GitHubAuth
+	Debug     bool   `env:"DEBUG,default=false"`
+	LogLevel  string `env:"LOG_LEVEL,default=info"`
+	Port      string `env:"PORT,default=80"`
+	StaticDir string `env:"STATIC_DIR"`
+	DB        DB
+	OAuth     OAuth
 }
 
-type GitHubAuth struct {
-	ID          string `env:"GITHUB_CLIENT_ID"`
-	Secret      string `env:"GITHUB_CLIENT_SECRET"`
-	RedirectURL string `env:"GITHUB_REDIRECT_URL"`
+type OAuth struct {
+	RedirectURLBase string `env:"OAUTH_REDIRECT_URL_BASE"`
+	GitHubID        string `env:"GITHUB_CLIENT_ID"`
+	GitHubSecret    string `env:"GITHUB_CLIENT_SECRET"`
+	GoogleID        string `env:"GOOGLE_CLIENT_ID"`
+	GoogleSecret    string `env:"GOOGLE_CLIENT_SECRET"`
+}
+
+func (o OAuth) RedirectURL(name string) string {
+	return fmt.Sprintf("%s/api/oauth/callback/%s", o.RedirectURLBase, name)
 }
 
 type DB struct {

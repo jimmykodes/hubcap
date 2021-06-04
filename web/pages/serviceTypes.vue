@@ -9,7 +9,7 @@
         />
       </v-col>
     </v-row>
-    <v-row v-if="serviceTypes.length === 0">
+    <v-row v-if="serviceTypes.length === 0 && !loading.serviceTypes">
       <v-col>
         <v-list>
           <v-list-item class="font-italics">No Service Types</v-list-item>
@@ -33,7 +33,7 @@
     </v-dialog>
     <v-dialog v-model="dialog.delete" max-width="500px">
       <v-card>
-        <v-card-title> Confirm Delete </v-card-title>
+        <v-card-title> Confirm Delete</v-card-title>
         <v-card-subtitle>
           Are you sure you want to delete this service type?
         </v-card-subtitle>
@@ -82,6 +82,13 @@ export default {
           delay(() => (this.serviceType = {}), 100)
         }
       },
+    },
+    'loading.serviceTypes'(newVal) {
+      if (newVal) {
+        this.$store.commit('loading/start')
+      } else {
+        this.$store.commit('loading/end')
+      }
     },
   },
   created() {

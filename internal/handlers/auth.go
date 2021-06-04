@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v4"
 	"go.uber.org/zap"
 
@@ -15,125 +16,156 @@ import (
 	"github.com/jimmykodes/vehicle_maintenance/internal/settings"
 )
 
-const errorRedirect = "/#error"
+const (
+	canceledRedirect  = "/#canceled"
+	errorRedirect     = "/#error"
+	stateCookieName   = "state"
+	SessionCookieName = "session"
+)
 
 type Auth struct {
-	logger  *zap.Logger
-	userDAO dao.User
-	oauth   *auth.Github
+	logger      *zap.Logger
+	userDAO     dao.User
+	githubOAuth *auth.Github
+	googleOAuth *auth.Google
 }
 
-func NewAuth(logger *zap.Logger, userDAO dao.User, ghSettings settings.GitHubAuth) *Auth {
-	return &Auth{logger: logger, userDAO: userDAO, oauth: auth.NewGithub(ghSettings)}
+func NewAuth(logger *zap.Logger, userDAO dao.User, oauthSettings settings.OAuth) *Auth {
+	return &Auth{
+		logger:      logger,
+		userDAO:     userDAO,
+		githubOAuth: auth.NewGithub(oauthSettings),
+		googleOAuth: auth.NewGoogle(oauthSettings),
+	}
 }
 
 func (h Auth) Login(w http.ResponseWriter, r *http.Request) {
-	state, url, err := h.oauth.AuthCodeURL()
+	vars := mux.Vars(r)
+	service := vars["service"]
+	var oauth auth.OAuth
+	switch vars["service"] {
+	case auth.GoogleService:
+		oauth = h.googleOAuth
+	case auth.GitHubService:
+		oauth = h.githubOAuth
+	default:
+		h.logger.Error("invalid login service", zap.String("service", service))
+		writeErrorResponse(w, h.logger, http.StatusBadRequest, "invalid oauth service")
+		return
+	}
+
+	state, url, err := oauth.AuthCodeURL()
 	if err != nil {
 		writeErrorResponse(w, h.logger, http.StatusInternalServerError, "")
 		return
 	}
+	h.logger.Debug("setting state cookie", zap.String("cookie name", stateCookieName), zap.String("state", state))
 	http.SetCookie(w, &http.Cookie{
-		Name:     "state",
+		Name:     stateCookieName,
 		Value:    state,
 		Expires:  time.Now().Add(time.Minute * 10),
 		Secure:   false,
 		HttpOnly: true,
+		Path:     "/",
 	})
 	http.Redirect(w, r, url, http.StatusFound)
 }
 
-// Callback is the destination from googleOAuth and handles creating the user and session
+// Callback is the destination from oauth handlers and handles creating the user and session
 func (h Auth) Callback(w http.ResponseWriter, r *http.Request) {
-	destination := h.oAuth2Handler(w, r)
-	http.Redirect(w, r, destination, http.StatusFound)
-}
-
-// oAuth2Handler is the actual handler of the oauth2 return data
-// returns redirect location as string
-func (h Auth) oAuth2Handler(w http.ResponseWriter, r *http.Request) string {
-	qp := map[string]string{
-		"error": r.URL.Query().Get("error"),
-		"code":  r.URL.Query().Get("code"),
-		"state": r.URL.Query().Get("state"),
+	vars := mux.Vars(r)
+	service := vars["service"]
+	if service == "" {
+		h.logger.Error("missing service")
+		http.Redirect(w, r, errorRedirect, http.StatusFound)
+		return
 	}
-	if qp["error"] != "" {
-		if qp["error"] == "access_denied" {
-			// user canceled just return to home screen
-			return "/#canceled"
+	localLogger := h.logger.With(zap.String("service", service))
+	stateCookie, err := r.Cookie(stateCookieName)
+	if err != nil {
+		localLogger.Error("error getting state cookie", zap.Error(err))
+		http.Redirect(w, r, errorRedirect, http.StatusFound)
+		return
+	}
+	resp := auth.NewResponse(r.URL.Query())
+	if err := resp.Validate(stateCookie.Value); err != nil {
+		if errors.Is(err, auth.ErrCanceled) {
+			http.Redirect(w, r, canceledRedirect, http.StatusFound)
+			return
 		}
-		return errorRedirect
+		localLogger.Error("invalid oauth response", zap.Error(err))
+		http.Redirect(w, r, errorRedirect, http.StatusFound)
+		return
 	}
-	stateCookie, err := r.Cookie("state")
+	ctx := r.Context()
+	var oauth auth.OAuth
+	switch service {
+	case auth.GoogleService:
+		oauth = h.googleOAuth
+	case auth.GitHubService:
+		oauth = h.githubOAuth
+	default:
+		http.Redirect(w, r, errorRedirect, http.StatusFound)
+		return
+	}
+	username, err := oauth.GetUsername(resp.Code)
 	if err != nil {
-		h.logger.Error("error getting state", zap.Error(err))
-		return errorRedirect
+		http.Redirect(w, r, errorRedirect, http.StatusFound)
+		return
 	}
-	qpState := qp["state"]
-	if qpState == "" {
-		h.logger.Debug("no state from OAuth2")
-		return errorRedirect
-	}
-	sessionState := stateCookie.Value
-	if qpState != sessionState {
-		h.logger.Debug("invalid state from OAuth2")
-		return errorRedirect
-	}
-
-	if qp["code"] == "" {
-		h.logger.Debug("No code supplied from OAuth2")
-		return errorRedirect
-	}
-
-	token, err := h.oauth.Exchange(qp["code"])
+	user, err := h.getOrCreateUser(ctx, username)
 	if err != nil {
-		h.logger.Error("Error retrieving token", zap.Error(err))
-		return errorRedirect
-	}
-
-	userData, err := h.oauth.GetUserInfo(token)
-	if err != nil {
-		h.logger.Error("Error getting user information", zap.Error(err))
-		return errorRedirect
-	}
-	h.logger.Debug("user", zap.Any("data", userData))
-	username, ok := userData["login"].(string)
-	if !ok {
-		h.logger.Error("Error getting user login")
-		return errorRedirect
-	}
-	user, err := h.getUser(r.Context(), username)
-	if err != nil {
-		h.logger.Error("error getting user", zap.Error(err))
-		return errorRedirect
+		http.Redirect(w, r, errorRedirect, http.StatusFound)
+		return
 	}
 	expires := time.Now().Add(time.Hour * 24)
-	session, err := h.userDAO.CreateSession(r.Context(), user, expires)
+	session, err := h.userDAO.CreateSession(ctx, user, expires)
 	if err != nil {
-		h.logger.Error("error creating user session", zap.Error(err), zap.String("username", username))
-		return errorRedirect
+		localLogger.Error("error creating session", zap.Error(err))
+		http.Redirect(w, r, errorRedirect, http.StatusFound)
+		return
 	}
+	h.setSessionCookie(w, session, expires)
+	http.Redirect(w, r, "/", http.StatusFound)
+}
+
+func (h Auth) LogOut(w http.ResponseWriter, r *http.Request) {
+	sessionCookie, err := r.Cookie(SessionCookieName)
+	if err != nil {
+		h.logger.Debug("error getting session cookie, nothing to do")
+		http.Redirect(w, r, "/", http.StatusFound)
+		return
+	}
+
+	if err := h.userDAO.DeleteSession(r.Context(), sessionCookie.Value); err != nil {
+		h.logger.Error("error deleting session", zap.String("session", sessionCookie.Value), zap.Error(err))
+	}
+	h.setSessionCookie(w, "", time.Now())
+	http.Redirect(w, r, "/", http.StatusFound)
+}
+
+// getOrCreateUser will lookup the user by username, if one does not exist, it will be created
+func (h Auth) getOrCreateUser(ctx context.Context, username string) (*dto.User, error) {
+	user, err := h.userDAO.GetFromUsername(ctx, username)
+	if errors.Is(err, pgx.ErrNoRows) {
+		if err = h.userDAO.Create(ctx, &dto.User{Username: username}); err != nil {
+			return nil, err
+		}
+		return h.getOrCreateUser(ctx, username)
+	}
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
+func (h Auth) setSessionCookie(w http.ResponseWriter, session string, expires time.Time) {
 	http.SetCookie(w, &http.Cookie{
-		Name:     "session",
+		Name:     SessionCookieName,
 		Value:    session,
 		Path:     "/",
 		Expires:  expires,
 		Secure:   false,
 		HttpOnly: true,
 	})
-	return "/"
-}
-
-func (h Auth) getUser(ctx context.Context, username string) (*dto.User, error) {
-	user, err := h.userDAO.GetFromUsername(ctx, username)
-	if errors.Is(err, pgx.ErrNoRows) {
-		if err = h.userDAO.Create(ctx, &dto.User{Username: username}); err != nil {
-			return nil, err
-		}
-		return h.getUser(ctx, username)
-	}
-	if err != nil {
-		return nil, err
-	}
-	return user, nil
 }

@@ -4,7 +4,7 @@
       <v-col v-for="s in services" :key="s.id" cols="12" md="6">
         <service :service="s" @edit="editService" @delete="deleteService" />
       </v-col>
-      <v-col v-if="services.length === 0">
+      <v-col v-if="services.length === 0 && !loading.services">
         <v-list>
           <v-list-item>
             <v-list-item-content class="font-italics">
@@ -33,11 +33,11 @@
     </v-dialog>
     <v-dialog v-model="dialog.delete" max-width="500px">
       <v-card>
-        <v-card-title> Confirm Delete </v-card-title>
+        <v-card-title> Confirm Delete</v-card-title>
         <v-card-subtitle>
           Are you sure you want to delete this service?
         </v-card-subtitle>
-        <v-card-text> This cannot be undone. </v-card-text>
+        <v-card-text> This cannot be undone.</v-card-text>
         <v-card-actions>
           <v-spacer />
           <v-btn text @click="dialog.delete = false">Cancel</v-btn>
@@ -52,6 +52,7 @@
 import { delay, cloneDeep, every, values } from 'lodash'
 import Service from '~/components/services/service'
 import NewService from '~/components/services/newService'
+
 export default {
   name: 'Services',
   components: { NewService, Service },
@@ -82,6 +83,13 @@ export default {
           delay(() => (this.service = {}), 100)
         }
       },
+    },
+    'loading.services'(newVal) {
+      if (newVal) {
+        this.$store.commit('loading/start')
+      } else {
+        this.$store.commit('loading/end')
+      }
     },
   },
   created() {

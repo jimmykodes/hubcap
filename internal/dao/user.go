@@ -20,7 +20,10 @@ type User interface {
 	Update(ctx context.Context, u *dto.User, id int64) error
 	UpdateAPIKey(ctx context.Context, id int64) error
 	Delete(ctx context.Context, id int64) error
+	DeleteSession(ctx context.Context, session string) error
 }
+
+var _ User = &userDAO{}
 
 type userDAO struct {
 	conn *pgxpool.Pool
@@ -34,6 +37,7 @@ type userDAO struct {
 	updateUserQuery          string
 	updateApiKeyQuery        string
 	deleteUserQuery          string
+	deleteSessionQuery       string
 }
 
 func newUserDAO(conn *pgxpool.Pool) (*userDAO, error) {
@@ -49,6 +53,7 @@ func newUserDAO(conn *pgxpool.Pool) (*userDAO, error) {
 		updateUserQuery:          "UPDATE users SET username = $1, super_user = $2 WHERE id = $3;",
 		updateApiKeyQuery:        "UPDATE users SET api_key = $1 WHERE id = $2;",
 		deleteUserQuery:          "DELETE FROM users WHERE id = $1",
+		deleteSessionQuery:       "DELETE FROM sessions WHERE key = $1",
 	}, nil
 }
 
@@ -113,5 +118,10 @@ func (u *userDAO) UpdateAPIKey(ctx context.Context, id int64) error {
 
 func (u *userDAO) Delete(ctx context.Context, id int64) error {
 	_, err := u.conn.Exec(ctx, u.deleteUserQuery, id)
+	return err
+}
+
+func (u *userDAO) DeleteSession(ctx context.Context, session string) error {
+	_, err := u.conn.Exec(ctx, u.deleteSessionQuery, session)
 	return err
 }

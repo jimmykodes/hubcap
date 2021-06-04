@@ -4,8 +4,7 @@
       <v-col v-for="v in vehicles" :key="v.id" cols="12" md="6">
         <vehicle :vehicle="v" @edit="editVehicle" @delete="confirm" />
       </v-col>
-
-      <v-col v-if="vehicles.length === 0">
+      <v-col v-if="vehicles.length === 0 && !loading.vehicles">
         <v-list>
           <v-list-item>
             <v-list-item-content class="font-italics">
@@ -32,7 +31,7 @@
     </v-dialog>
     <v-dialog v-model="dialog.delete" max-width="500px">
       <v-card>
-        <v-card-title> Confirm Delete </v-card-title>
+        <v-card-title>Confirm Delete</v-card-title>
         <v-card-subtitle>
           Are you sure you want to delete this vehicle?
         </v-card-subtitle>
@@ -54,6 +53,7 @@
 import { delay, every, values } from 'lodash'
 import NewVehicle from '~/components/vehicles/newVehicle'
 import Vehicle from '~/components/vehicles/vehicle'
+
 const url = '/vehicles'
 export default {
   name: 'Vehicles',
@@ -80,6 +80,13 @@ export default {
           delay(() => (this.vehicle = {}), 100)
         }
       },
+    },
+    'loading.vehicles'(newVal) {
+      if (newVal) {
+        this.$store.commit('loading/start')
+      } else {
+        this.$store.commit('loading/end')
+      }
     },
   },
   created() {

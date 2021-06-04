@@ -35,7 +35,7 @@ func main() {
 		serviceTypeHandler = handlers.NewServiceType(logger, daos.ServiceType)
 		vehicleHandler     = handlers.NewVehicle(logger, daos.Vehicle)
 		userHandler        = handlers.NewUser(logger, daos.User)
-		authHandler        = handlers.NewAuth(logger, daos.User, appSettings.GitHubAuth)
+		authHandler        = handlers.NewAuth(logger, daos.User, appSettings.OAuth)
 	)
 
 	r := mux.NewRouter()
@@ -58,8 +58,10 @@ func main() {
 
 	users.Handle("/me", mw.Reduce(userHandler.Me, mw.Standard...))
 
-	oauth.Handle("/login", mw.Reduce(authHandler.Login, mw.Log))
-	oauth.Handle("/callback", mw.Reduce(authHandler.Callback, mw.Log))
+	oauth.Handle("/login/{service}", mw.Reduce(authHandler.Login, mw.Log))
+	oauth.Handle("/callback/{service}", mw.Reduce(authHandler.Callback, mw.Log))
+
+	api.Handle("/logout", mw.Reduce(authHandler.LogOut, mw.Log))
 
 	fs := http.FileServer(http.Dir(appSettings.StaticDir))
 	r.PathPrefix("/").Handler(fs)
