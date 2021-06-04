@@ -109,7 +109,15 @@ func (h Auth) Callback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	username, err := oauth.GetUsername(resp.Code)
+	if err != nil {
+		http.Redirect(w, r, errorRedirect, http.StatusFound)
+		return
+	}
 	user, err := h.getOrCreateUser(ctx, username)
+	if err != nil {
+		http.Redirect(w, r, errorRedirect, http.StatusFound)
+		return
+	}
 	expires := time.Now().Add(time.Hour * 24)
 	session, err := h.userDAO.CreateSession(ctx, user, expires)
 	if err != nil {
