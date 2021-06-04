@@ -19,8 +19,18 @@
     <v-app-bar fixed app>
       <v-toolbar-title v-text="title" />
       <v-spacer />
-      <v-btn v-if="loggedIn">Log Out</v-btn>
-      <v-btn v-else href="/api/oauth/login">Login</v-btn>
+      <v-btn v-if="loggedIn" @click="logout">Log Out</v-btn>
+      <template v-else>
+        <v-btn href="/api/oauth/login/github">Login with GitHub</v-btn>
+        <v-btn href="/api/oauth/login/google">Login with Google</v-btn>
+      </template>
+      <v-progress-linear
+        :active="loading"
+        indeterminate
+        absolute
+        bottom
+        color="deep-purple accent-4"
+      ></v-progress-linear>
     </v-app-bar>
     <v-main>
       <v-container>
@@ -31,6 +41,8 @@
 </template>
 
 <script>
+import { mapState } from 'vuex'
+
 export default {
   data() {
     return {
@@ -70,11 +82,20 @@ export default {
       }
       return this.allItems
     },
+    ...mapState('loading', {
+      loading: 'loading',
+    }),
   },
   created() {
     this.$axios.$get('/users/me').then((user) => {
       this.$store.commit('auth/setUser', user)
     })
+  },
+  methods: {
+    logout() {
+      this.$store.commit('auth/clearUser')
+      window.location.href = '/api/logout'
+    },
   },
 }
 </script>

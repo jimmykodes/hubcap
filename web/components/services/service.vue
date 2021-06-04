@@ -12,7 +12,7 @@
       <data-item title="Odometer" :value="service.odometer"></data-item>
       <data-item
         title="Date"
-        :value="new Date(service.date * 1000).toLocaleDateString()"
+        :value="new Date(service.date * 1000).toISOString().slice(0, 10)"
       ></data-item>
       <data-item
         v-for="(v, k) in service.data"
