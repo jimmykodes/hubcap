@@ -52,6 +52,7 @@
 import { delay, cloneDeep, every, values } from 'lodash'
 import Service from '~/components/services/service'
 import NewService from '~/components/services/newService'
+import api from '~/api'
 
 export default {
   name: 'Services',
@@ -99,25 +100,24 @@ export default {
   },
   methods: {
     getVehicles() {
-      this.$axios
-        .$get('/vehicles')
+      this.loading.vehicles = true
+      api.vehicles
+        .list()
         .then((vehicles) => (this.vehicles = vehicles))
-        .catch((err) => console.error(err))
         .finally(() => (this.loading.vehicles = false))
     },
     getServiceTypes() {
-      this.$axios
-        .$get('/service_types')
+      this.loading.serviceTypes = true
+      api.serviceTypes
+        .list()
         .then((serviceTypes) => (this.serviceTypes = serviceTypes))
-        .catch((err) => console.error(err))
         .finally(() => (this.loading.serviceTypes = false))
     },
     getServices() {
       this.loading.services = true
-      this.$axios
-        .$get('/services')
+      api.services
+        .list()
         .then((services) => (this.services = services))
-        .catch((err) => console.error(err))
         .finally(() => (this.loading.services = false))
     },
     saveService() {
@@ -127,14 +127,13 @@ export default {
           this.dialog.save = false
           this.getServices()
         })
-        .catch((err) => console.error(err))
         .finally(() => (this.loading.save = false))
     },
     _save() {
       if (this.service.id) {
-        return this.$axios.$put(`/services/${this.service.id}`, this.service)
+        return api.services.update(this.service.id, this.service)
       }
-      return this.$axios.$post('/services', this.service)
+      return api.services.create(this.service)
     },
     editService(service) {
       this.service = cloneDeep(service)
@@ -145,13 +144,12 @@ export default {
       this.dialog.delete = true
     },
     doDelete() {
-      this.$axios
-        .$delete(`/services/${this.service.id}`)
+      api.services
+        .delete(this.service.id)
         .then(() => {
           this.dialog.delete = false
           this.getServices()
         })
-        .catch((err) => console.error(err))
         .finally(() => (this.loading.delete = false))
     },
   },

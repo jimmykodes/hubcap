@@ -53,8 +53,8 @@
 import { delay, every, values } from 'lodash'
 import NewVehicle from '~/components/vehicles/newVehicle'
 import Vehicle from '~/components/vehicles/vehicle'
+import api from '~/api'
 
-const url = '/vehicles'
 export default {
   name: 'Vehicles',
   components: { Vehicle, NewVehicle },
@@ -95,13 +95,12 @@ export default {
   methods: {
     getVehicles() {
       this.loading.vehicles = true
-      return this.$axios
-        .$get(url)
+      api.vehicles
+        .list()
         .then((vehicles) => {
           this.vehicles = vehicles
           this.dialog.save = false
         })
-        .catch((err) => console.error(err))
         .finally(() => (this.loading.vehicles = false))
     },
     editVehicle(vehicle) {
@@ -113,26 +112,22 @@ export default {
       this.dialog.delete = true
     },
     deleteVehicle() {
-      this.$axios
-        .$delete(`${url}/${this.vehicle.id}`)
-        .then(() => {
-          this.getVehicles()
-          this.dialog.delete = false
-        })
-        .catch((err) => console.error(err))
+      api.vehicles.delete(this.vehicle.id).then(() => {
+        this.getVehicles()
+        this.dialog.delete = false
+      })
     },
     saveVehicle() {
       this.loading.save = true
       this._save()
         .then(() => this.getVehicles())
-        .catch((err) => console.error(err))
         .finally(() => (this.loading.save = false))
     },
     _save() {
       if (this.vehicle.id) {
-        return this.$axios.$put(`${url}/${this.vehicle.id}`, this.vehicle)
+        return api.vehicles.update(this.vehicle.id, this.vehicle)
       }
-      return this.$axios.$post(url, this.vehicle)
+      return api.vehicles.create(this.vehicle)
     },
   },
 }
