@@ -4,6 +4,7 @@
       {{ vehicle.name }}
       <v-spacer />
       <card-menu
+        v-if="!readOnly"
         @edit="$emit('edit', vehicle)"
         @delete="$emit('delete', vehicle)"
       />
@@ -21,6 +22,10 @@ export default {
     vehicle: {
       type: Object,
       required: true,
+    },
+    readOnly: {
+      type: Boolean,
+      default: () => false,
     },
   },
 }
