@@ -1,77 +1,232 @@
 <template>
-  <v-row justify="center" align="center">
-    <v-col cols="12" sm="8" md="6">
-      <v-card>
-        <v-card-title class="headline">
-          Welcome to the Vuetify + Nuxt.js template
-        </v-card-title>
-        <v-card-text>
-          <p>
-            Vuetify is a progressive Material Design component framework for
-            Vue.js. It was designed to empower developers to create amazing
-            applications.
-          </p>
-          <p>
-            For more information on Vuetify, check out the
-            <a
-              href="https://vuetifyjs.com"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              documentation </a
-            >.
-          </p>
-          <p>
-            If you have questions, please join the official
-            <a
-              href="https://chat.vuetifyjs.com/"
-              target="_blank"
-              rel="noopener noreferrer"
-              title="chat"
-            >
-              discord </a
-            >.
-          </p>
-          <p>
-            Find a bug? Report it on the github
-            <a
-              href="https://github.com/vuetifyjs/vuetify/issues"
-              target="_blank"
-              rel="noopener noreferrer"
-              title="contribute"
-            >
-              issue board </a
-            >.
-          </p>
-          <p>
-            Thank you for developing with Vuetify and I look forward to bringing
-            more exciting features in the future.
-          </p>
-          <div class="text-xs-right">
-            <em><small>&mdash; John Leider</small></em>
-          </div>
-          <hr class="my-3" />
-          <a
-            href="https://nuxtjs.org/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Nuxt Documentation
-          </a>
-          <br />
-          <a
-            href="https://github.com/nuxt/nuxt.js"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Nuxt GitHub
-          </a>
-        </v-card-text>
-      </v-card>
+  <v-row>
+    <v-col cols="12">
+      <template v-if="loggedIn">
+        <v-container>
+          <v-row dense>
+            <v-col>
+              <v-row>
+                <v-col> <h3 class="headline">My Vehicles</h3> </v-col>
+                <v-spacer />
+                <v-col cols="auto">
+                  <v-btn text color="primary">
+                    <v-icon class="pr-1">mdi-plus</v-icon> New
+                  </v-btn>
+                </v-col>
+              </v-row>
+              <v-row>
+                <v-col v-for="v in vehicles.slice(0, 3)" :key="v.id" cols="4">
+                  <vehicle :vehicle="v" read-only />
+                </v-col>
+              </v-row>
+            </v-col>
+          </v-row>
+          <v-divider class="my-3" />
+          <v-row dense>
+            <v-col>
+              <v-row>
+                <v-col>
+                  <h3 class="headline">My Service Types</h3>
+                </v-col>
+                <v-spacer />
+                <v-col cols="auto">
+                  <v-btn text color="primary">
+                    <v-icon class="pr-1">mdi-plus</v-icon> New
+                  </v-btn>
+                </v-col>
+              </v-row>
+              <v-row>
+                <v-col
+                  v-for="st in serviceTypes.slice(0, 3)"
+                  :key="st.id"
+                  cols="4"
+                >
+                  <service-type :service-type="st" read-only />
+                </v-col>
+              </v-row>
+            </v-col>
+          </v-row>
+          <v-divider class="my-3" />
+          <v-row dense>
+            <v-col>
+              <v-row>
+                <v-col>
+                  <h3 class="headline">My Services</h3>
+                </v-col>
+                <v-spacer />
+                <v-col cols="auto">
+                  <v-btn text color="primary">
+                    <v-icon class="pr-1">mdi-plus</v-icon> New
+                  </v-btn>
+                </v-col>
+              </v-row>
+              <v-row>
+                <v-col v-for="s in services.slice(0, 3)" :key="s.id" cols="4">
+                  <service :service="s" read-only />
+                </v-col>
+              </v-row>
+            </v-col>
+          </v-row>
+        </v-container>
+      </template>
+      <template v-else>
+        <v-container>
+          <v-row>
+            <v-col>
+              <v-card>
+                <v-card-title>Welcome!</v-card-title>
+                <v-card-text>
+                  Log in to view your vehicles, service types, and services
+                </v-card-text>
+              </v-card>
+            </v-col>
+          </v-row>
+        </v-container>
+      </template>
+      <v-dialog v-model="dialog.service" max-width="500">
+        <new-service
+          v-model="service"
+          :loading="loading.service"
+          :service-types="serviceTypes"
+          :vehicles="vehicles"
+          @save="saveService"
+          @close="dialog.service = false"
+        />
+      </v-dialog>
+      <v-dialog v-model="dialog.vehicle" max-width="500">
+        <new-vehicle
+          v-model="vehicle"
+          :loading="loading.vehicle"
+          @save="saveVehicle"
+          @close="dialog.vehicle = false"
+        />
+      </v-dialog>
+      <v-dialog v-model="dialog.serviceType" max-width="500">
+        <new-service-type
+          v-model="serviceType"
+          :loading="loading.serviceType"
+          @save="saveServiceType"
+          @close="dialog.serviceType = false"
+        />
+      </v-dialog>
     </v-col>
   </v-row>
 </template>
 
 <script>
-export default {}
+import api from '~/api'
+import NewService from '~/components/services/newService'
+import Service from '~/components/services/service'
+import NewServiceType from '~/components/serviceTypes/newServiceType'
+import ServiceType from '~/components/serviceTypes/serviceType'
+import NewVehicle from '~/components/vehicles/newVehicle'
+import Vehicle from '~/components/vehicles/vehicle'
+
+export default {
+  components: {
+    NewServiceType,
+    NewVehicle,
+    NewService,
+    Service,
+    ServiceType,
+    Vehicle,
+  },
+  data: () => ({
+    fab: false,
+    vehicles: [],
+    services: [],
+    serviceTypes: [],
+    service: {},
+    vehicle: {},
+    serviceType: {},
+    dialog: {
+      service: false,
+      vehicle: false,
+      serviceType: false,
+    },
+    loading: {
+      service: false,
+      vehicle: false,
+      serviceType: false,
+    },
+  }),
+  computed: {
+    loggedIn() {
+      return !!this.$store.state.auth.user
+    },
+  },
+  watch: {
+    loggedIn(newVal) {
+      if (newVal) {
+        this.init()
+      }
+    },
+  },
+  mounted() {
+    if (!this.loggedIn) {
+      return
+    }
+    this.init()
+  },
+  methods: {
+    init() {
+      this.getServiceTypes()
+      this.getServices()
+      this.getVehicles()
+    },
+    getVehicles() {
+      api.vehicles.list().then((vehicles) => (this.vehicles = vehicles))
+    },
+    getServices() {
+      api.services.list().then((services) => (this.services = services))
+    },
+    getServiceTypes() {
+      api.serviceTypes
+        .list()
+        .then((serviceTypes) => (this.serviceTypes = serviceTypes))
+    },
+    newVehicle() {
+      this.vehicle = {}
+      this.dialog.vehicle = true
+    },
+    newService() {
+      this.service = {}
+      this.dialog.service = true
+    },
+    newServiceType() {
+      this.serviceType = {}
+      this.dialog.serviceType = true
+    },
+    saveVehicle() {
+      this.loading.vehicle = true
+      api.vehicles
+        .create(this.vehicle)
+        .then(() => {
+          this.dialog.vehicle = false
+          this.getVehicles()
+        })
+        .finally(() => (this.loading.vehicle = false))
+    },
+    saveService() {
+      this.loading.service = true
+      api.services
+        .create(this.service)
+        .then(() => {
+          this.dialog.service = false
+          this.getServices()
+        })
+        .finally(() => (this.loading.service = false))
+    },
+    saveServiceType() {
+      this.loading.serviceType = true
+      api.serviceTypes
+        .create(this.serviceType)
+        .then(() => {
+          this.dialog.serviceType = false
+          this.getServiceTypes()
+        })
+        .finally(() => (this.loading.serviceType = false))
+    },
+  },
+}
 </script>

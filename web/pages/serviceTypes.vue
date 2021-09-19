@@ -55,8 +55,8 @@
 import { delay, every, values } from 'lodash'
 import NewServiceType from '~/components/serviceTypes/newServiceType'
 import ServiceType from '~/components/serviceTypes/serviceType'
+import api from '~/api'
 
-const url = '/service_types'
 export default {
   name: 'ServiceTypes',
   components: { NewServiceType, ServiceType },
@@ -97,10 +97,9 @@ export default {
   methods: {
     getServiceTypes() {
       this.loading.serviceTypes = true
-      this.$axios
-        .$get(url)
+      api.serviceTypes
+        .list()
         .then((res) => (this.serviceTypes = res))
-        .catch((err) => console.error(err))
         .finally(() => (this.loading.serviceTypes = false))
     },
     editServiceType(serviceType) {
@@ -108,13 +107,10 @@ export default {
       this.dialog.save = true
     },
     deleteServiceType() {
-      this.$axios
-        .$delete(`${url}/${this.serviceType.id}`)
-        .then(() => {
-          this.getServiceTypes()
-          this.dialog.delete = false
-        })
-        .catch((err) => console.error(err))
+      api.serviceTypes.delete(this.serviceType.id).then(() => {
+        this.getServiceTypes()
+        this.dialog.delete = false
+      })
     },
     confirm(serviceType) {
       this.serviceType = serviceType
@@ -122,12 +118,9 @@ export default {
     },
     _save() {
       if (this.serviceType.id) {
-        return this.$axios.$put(
-          `${url}/${this.serviceType.id}`,
-          this.serviceType
-        )
+        return api.serviceTypes.update(this.serviceType.id, this.serviceType)
       }
-      return this.$axios.$post(url, this.serviceType)
+      return api.serviceTypes.create(this.serviceType)
     },
     saveServiceType() {
       this.loading.save = true
@@ -136,7 +129,6 @@ export default {
           this.getServiceTypes()
           this.dialog.save = false
         })
-        .catch((err) => console.error(err))
         .finally(() => (this.loading.save = false))
     },
   },

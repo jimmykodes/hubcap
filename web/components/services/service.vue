@@ -4,6 +4,7 @@
       {{ service.service_type_name }} - {{ service.vehicle_name }}
       <v-spacer />
       <card-menu
+        v-if="!readOnly"
         @edit="$emit('edit', service)"
         @delete="$emit('delete', service)"
       />
@@ -31,6 +32,10 @@ export default {
     service: {
       type: Object,
       required: true,
+    },
+    readOnly: {
+      type: Boolean,
+      default: () => false,
     },
   },
 }
