@@ -9,7 +9,7 @@
                 <v-col> <h3 class="headline">My Vehicles</h3> </v-col>
                 <v-spacer />
                 <v-col cols="auto">
-                  <v-btn text color="primary">
+                  <v-btn text color="primary" @click="newVehicle">
                     <v-icon class="pr-1">mdi-plus</v-icon> New
                   </v-btn>
                 </v-col>
@@ -30,7 +30,7 @@
                 </v-col>
                 <v-spacer />
                 <v-col cols="auto">
-                  <v-btn text color="primary">
+                  <v-btn text color="primary" @click="newServiceType">
                     <v-icon class="pr-1">mdi-plus</v-icon> New
                   </v-btn>
                 </v-col>
@@ -55,7 +55,7 @@
                 </v-col>
                 <v-spacer />
                 <v-col cols="auto">
-                  <v-btn text color="primary">
+                  <v-btn text color="primary" @click="newService">
                     <v-icon class="pr-1">mdi-plus</v-icon> New
                   </v-btn>
                 </v-col>
