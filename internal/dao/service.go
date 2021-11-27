@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v4/pgxpool"
+	"go.uber.org/zap"
 
 	"github.com/jimmykodes/vehicle_maintenance/internal/dto"
 )
@@ -18,7 +19,8 @@ type Service interface {
 }
 
 type serviceDAO struct {
-	conn *pgxpool.Pool
+	logger *zap.Logger
+	conn   *pgxpool.Pool
 
 	createQuery string
 	getQuery    string
@@ -30,7 +32,7 @@ type serviceDAO struct {
 	searchFields fields
 }
 
-func newService(conn *pgxpool.Pool) (*serviceDAO, error) {
+func newService(conn *pgxpool.Pool, logger *zap.Logger) (*serviceDAO, error) {
 	var getQuery = `
 SELECT s.id, s.date, s.odometer, s.data, s.user_id, s.vehicle_id, s.service_type_id, st.name as service_type_name, v.name as vehicle_name FROM services s
 	JOIN service_types st on st.id = s.service_type_id
@@ -48,7 +50,8 @@ WHERE s.user_id = $1
 	ff := fields{"vehicle_id": true, "service_type_id": true}
 	sf := fields{}
 	return &serviceDAO{
-		conn: conn,
+		logger: logger,
+		conn:   conn,
 
 		createQuery: "INSERT INTO services (date, odometer, data, user_id, vehicle_id, service_type_id) VALUES ($1, $2, $3, $4, $5, $6);",
 		getQuery:    getQuery,
@@ -84,6 +87,8 @@ func (s *serviceDAO) Select(ctx context.Context, sf SearchFilters, userID int64)
 		query = fmt.Sprintf("%s AND %s", s.searchQuery, wc.query())
 		args = append(args, wc.args...)
 	}
+	query = fmt.Sprintf("%s ORDER BY odometer DESC", query)
+	s.logger.Debug("running query", zap.String("query", query))
 	var services []*dto.Service
 	rows, err := s.conn.Query(ctx, query, args...)
 	if err != nil {

@@ -1,5 +1,6 @@
 <template>
   <v-container>
+    <page-header title="Services" @new="dialog.save = true" />
     <v-row>
       <v-col v-for="s in services" :key="s.id" cols="12" md="6">
         <service :service="s" @edit="editService" @delete="deleteService" />
@@ -13,13 +14,6 @@
           </v-list-item>
         </v-list>
       </v-col>
-    </v-row>
-    <v-row>
-      <v-spacer />
-      <v-btn text color="primary" @click.stop="dialog.save = true">
-        <v-icon class="pr-1">mdi-plus</v-icon>
-        New Service
-      </v-btn>
     </v-row>
     <v-dialog v-model="dialog.save" max-width="500px">
       <new-service
@@ -52,11 +46,12 @@
 import { delay, cloneDeep, every, values } from 'lodash'
 import Service from '~/components/services/service'
 import NewService from '~/components/services/newService'
+import PageHeader from '~/components/pageHeader'
 import api from '~/api'
 
 export default {
   name: 'Services',
-  components: { NewService, Service },
+  components: { PageHeader, NewService, Service },
   data: () => ({
     loading: {
       vehicles: false,

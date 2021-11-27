@@ -9,3 +9,6 @@ vendor/
 
 node_modules/
 var/
+
+#sql dump
+*.dump

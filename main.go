@@ -23,7 +23,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	daos, err := dao.New(appSettings.DB)
+	daos, err := dao.New(appSettings.DB, logger)
 	if err != nil {
 		logger.Fatal("error creating daos", zap.Error(err))
 	}

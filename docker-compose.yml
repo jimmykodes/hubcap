@@ -9,7 +9,7 @@ services:
     volumes:
       - ./var/docker/artifacts:/usr/local/sbin
     ports:
-      - 8000:80
+      - "8000:80"
   ui:
     image: library/node:14
     volumes:
@@ -23,7 +23,7 @@ services:
     volumes:
       - ./docker/proxy.conf:/etc/nginx/conf.d/default.conf
     ports:
-      - 80:80
+      - "80:80"
     restart: always
     depends_on:
       - ui
@@ -34,8 +34,9 @@ services:
     volumes:
       - ./docker/dbinit/pg:/docker-entrypoint-initdb.d:ro
       - ./var/db/pg_data:/var/lib/postgresql/data
+      - ./var/db/dumps:/dumps
     ports:
-      - 5432:5432
+      - "5432:5432"
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
