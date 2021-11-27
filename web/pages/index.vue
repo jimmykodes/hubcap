@@ -71,12 +71,21 @@
       </template>
       <template v-else>
         <v-container>
-          <v-row>
-            <v-col>
+          <v-row justify="center">
+            <v-col cols="12" md="6">
               <v-card>
-                <v-card-title>Welcome!</v-card-title>
-                <v-card-text>
+                <v-card-title>Welcome To Hubcap!</v-card-title>
+                <v-card-subtitle>
                   Log in to view your vehicles, service types, and services
+                </v-card-subtitle>
+                <v-card-text>
+                  <p>
+                    You may not need hubcaps for your car to run just fine, but
+                    it sure looks a lot better when they are there. In the same
+                    way, your vehicle service log may
+                    <span class="font-italic">work</span>, but it could probably
+                    use a solid set of hubcaps. That's where we come in.
+                  </p>
                 </v-card-text>
               </v-card>
             </v-col>

@@ -69,7 +69,7 @@ export default {
           to: '/graphs',
         },
       ],
-      title: 'Vehicle Maintenance',
+      title: 'Hubcap',
     }
   },
   computed: {
