@@ -1,5 +1,6 @@
 <template>
   <v-container>
+    <page-header title="Service Types" @new="dialog.save = true" />
     <v-row>
       <v-col v-for="st in serviceTypes" :key="st.id" cols="12" md="4">
         <service-type
@@ -15,13 +16,6 @@
           <v-list-item class="font-italics">No Service Types</v-list-item>
         </v-list>
       </v-col>
-    </v-row>
-    <v-row>
-      <v-spacer />
-      <v-btn color="primary" text @click.stop="dialog.save = true">
-        <v-icon class="pr-1">mdi-plus</v-icon>
-        New Service Type
-      </v-btn>
     </v-row>
     <v-dialog v-model="dialog.save" max-width="500px">
       <new-service-type
@@ -55,11 +49,12 @@
 import { delay, every, values } from 'lodash'
 import NewServiceType from '~/components/serviceTypes/newServiceType'
 import ServiceType from '~/components/serviceTypes/serviceType'
+import PageHeader from '~/components/pageHeader'
 import api from '~/api'
 
 export default {
   name: 'ServiceTypes',
-  components: { NewServiceType, ServiceType },
+  components: { PageHeader, NewServiceType, ServiceType },
   data: () => ({
     dialog: {
       save: false,

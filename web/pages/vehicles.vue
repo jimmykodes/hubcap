@@ -1,5 +1,6 @@
 <template>
   <v-container>
+    <page-header title="Vehicles" @new="dialog.save = true" />
     <v-row>
       <v-col v-for="v in vehicles" :key="v.id" cols="12" md="6">
         <vehicle :vehicle="v" @edit="editVehicle" @delete="confirm" />
@@ -13,13 +14,6 @@
           </v-list-item>
         </v-list>
       </v-col>
-    </v-row>
-    <v-row>
-      <v-spacer />
-      <v-btn text color="primary" @click.stop="dialog.save = true">
-        <v-icon class="pr-1">mdi-plus</v-icon>
-        New Vehicle
-      </v-btn>
     </v-row>
     <v-dialog v-model="dialog.save" max-width="500px">
       <new-vehicle
@@ -53,11 +47,12 @@
 import { delay, every, values } from 'lodash'
 import NewVehicle from '~/components/vehicles/newVehicle'
 import Vehicle from '~/components/vehicles/vehicle'
+import PageHeader from '~/components/pageHeader'
 import api from '~/api'
 
 export default {
   name: 'Vehicles',
-  components: { Vehicle, NewVehicle },
+  components: { PageHeader, Vehicle, NewVehicle },
   data: () => ({
     dialog: {
       save: false,

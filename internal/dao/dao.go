@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v4/pgxpool"
+	"go.uber.org/zap"
 
 	"github.com/jimmykodes/vehicle_maintenance/internal/settings"
 )
@@ -18,7 +19,7 @@ type DAO struct {
 	Vehicle     Vehicle
 }
 
-func New(dbSettings settings.DB) (*DAO, error) {
+func New(dbSettings settings.DB, logger *zap.Logger) (*DAO, error) {
 	conn, err := pgxpool.Connect(context.Background(), dbSettings.DSN())
 	if err != nil {
 		return nil, err
@@ -27,7 +28,7 @@ func New(dbSettings settings.DB) (*DAO, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error creating vehicleDAO dao: %w", err)
 	}
-	service, err := newService(conn)
+	service, err := newService(conn, logger)
 	if err != nil {
 		return nil, fmt.Errorf("error creating serviceDAO dao: %w", err)
 	}
