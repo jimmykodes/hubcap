@@ -15,7 +15,7 @@
         </v-list>
       </v-col>
     </v-row>
-    <v-dialog v-model="dialog.save" max-width="500px">
+    <v-dialog v-model="dialog.save" width="500px">
       <new-service
         v-model="service"
         :vehicles="vehicles"

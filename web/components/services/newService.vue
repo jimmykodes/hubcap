@@ -134,6 +134,16 @@
             @change="emitData(q.title, $event)"
           ></v-switch>
         </v-col>
+        <v-col v-else-if="q.type === 'calculated'">
+          <v-text-field
+            :value="calculate(q)"
+            :label="q.title"
+            class="px-3"
+            readonly
+            disabled
+            outlined
+          ></v-text-field>
+        </v-col>
       </v-row>
     </v-container>
     <v-card-actions>
@@ -199,6 +209,20 @@ export default {
     },
   },
   methods: {
+    calculate(question) {
+      const f1 = this.number(this.getData(question.field1))
+      const f2 = this.number(this.getData(question.field2))
+      switch (question.operator) {
+        case 'm':
+          return f1 * f2
+        case 'd':
+          return f1 / f2
+        case 'a':
+          return f1 + f2
+        case 's':
+          return f1 - f2
+      }
+    },
     number(val) {
       return toNumber(val)
     },
@@ -211,6 +235,9 @@ export default {
       }
     },
     getData(key) {
+      if (key === 'Odometer') {
+        return this.value.odometer
+      }
       return get(this.value, `data.${key}`)
     },
     emitData(field, val, transformer) {

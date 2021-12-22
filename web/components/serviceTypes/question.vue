@@ -22,7 +22,7 @@
         </v-btn>
       </v-col>
     </v-row>
-    <template v-if="isMultipleChoice">
+    <template v-if="value.type === 'multiple'">
       <v-row v-for="(o, index) in value.options" :key="index" dense>
         <v-col>
           <v-text-field
@@ -50,7 +50,7 @@
         </v-col>
       </v-row>
     </template>
-    <template v-if="isRange">
+    <template v-else-if="value.type === 'range'">
       <v-row dense>
         <v-col>
           <v-text-field
@@ -75,6 +75,38 @@
         </v-col>
       </v-row>
     </template>
+    <template v-else-if="value.type === 'calculated'">
+      <v-row dense>
+        <v-col>
+          <v-select
+            label="Field 1"
+            :items="calcOptions"
+            :value="value.field1"
+            item-text="title"
+            item-value="title"
+            @input="emit('field1', $event)"
+          ></v-select>
+        </v-col>
+        <v-col>
+          <v-select
+            label="Operator"
+            :items="operators"
+            :value="value.operator"
+            @input="emit('operator', $event)"
+          ></v-select>
+        </v-col>
+        <v-col>
+          <v-select
+            label="Field 2"
+            :items="calcOptions"
+            item-text="title"
+            item-value="title"
+            :value="value.field2"
+            @input="emit('field2', $event)"
+          ></v-select>
+        </v-col>
+      </v-row>
+    </template>
   </v-container>
 </template>
 
@@ -88,6 +120,10 @@ export default {
       type: Object,
       required: true,
     },
+    calcOptions: {
+      type: Array,
+      required: true,
+    },
   },
   data: () => ({
     questionTypes: [
@@ -97,16 +133,15 @@ export default {
       { text: 'Long Text', value: 'textarea' },
       { text: 'Number', value: 'number' },
       { text: 'True False', value: 'bool' },
+      { text: 'Calculated', value: 'calculated' },
+    ],
+    operators: [
+      { text: 'Multiply (*)', value: 'm' },
+      { text: 'Divide (/)', value: 'd' },
+      { text: 'Add (+)', value: 'a' },
+      { text: 'Subtract (-)', value: 's' },
     ],
   }),
-  computed: {
-    isMultipleChoice() {
-      return this.value.type === 'multiple'
-    },
-    isRange() {
-      return this.value.type === 'range'
-    },
-  },
   methods: {
     emit(f, v) {
       const q = clone(this.value)
