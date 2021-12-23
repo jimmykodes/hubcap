@@ -38,6 +38,7 @@
           <v-divider></v-divider>
           <question
             :value="value.questions[index]"
+            :calc-options="numberQuestions(index)"
             @input="updateQuestion(index, $event)"
             @delete="deleteQuestion(index)"
           />
@@ -64,7 +65,7 @@
 </template>
 
 <script>
-import { clone, includes, toNumber } from 'lodash'
+import { clone, concat, filter, includes, toNumber } from 'lodash'
 import Question from '@/components/serviceTypes/question'
 
 export default {
@@ -89,6 +90,18 @@ export default {
     },
   },
   methods: {
+    numberQuestions(currentIndex) {
+      return concat(
+        [{ title: 'Odometer' }],
+        filter(this.value.questions, (q) => {
+          return (
+            q.type === 'number' ||
+            (q.type === 'calculated' &&
+              q.title !== this.value.questions[currentIndex].title)
+          )
+        })
+      )
+    },
     emit(field, val) {
       const v = clone(this.value)
       if (includes(['freq_miles', 'freq_days'], field)) {
