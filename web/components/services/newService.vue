@@ -135,14 +135,13 @@
           ></v-switch>
         </v-col>
         <v-col v-else-if="q.type === 'calculated'">
-          <v-text-field
-            :value="calculate(q)"
+          <calculated-input
             :label="q.title"
-            class="px-3"
-            readonly
-            disabled
-            outlined
-          ></v-text-field>
+            :field1="number(getData(q.field1))"
+            :field2="number(getData(q.field2))"
+            :operator="q.operator"
+            @input="emitData(q.title, $event)"
+          />
         </v-col>
       </v-row>
     </v-container>
