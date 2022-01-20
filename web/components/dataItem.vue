@@ -13,7 +13,7 @@ export default {
       required: true,
     },
     value: {
-      type: [Number, String],
+      type: [Number, String, Boolean],
       required: false,
       default() {
         return undefined
