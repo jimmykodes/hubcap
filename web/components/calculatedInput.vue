@@ -51,6 +51,9 @@ export default {
           val = this.field1 - this.field2
           break
       }
+      if (isNaN(val)) {
+        val = ''
+      }
       if (val !== this.last) {
         this.last = val
         this.$emit('input', val)

@@ -208,20 +208,6 @@ export default {
     },
   },
   methods: {
-    calculate(question) {
-      const f1 = this.number(this.getData(question.field1))
-      const f2 = this.number(this.getData(question.field2))
-      switch (question.operator) {
-        case 'm':
-          return f1 * f2
-        case 'd':
-          return f1 / f2
-        case 'a':
-          return f1 + f2
-        case 's':
-          return f1 - f2
-      }
-    },
     number(val) {
       return toNumber(val)
     },
